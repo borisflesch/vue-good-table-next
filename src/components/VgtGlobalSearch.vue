@@ -32,7 +32,7 @@ export default {
   props: [
     'value',
     'searchEnabled',
-    'globalSearchPlaceholder',
+    'global-search-placeholder',
   ],
   emits: [
     'input',
