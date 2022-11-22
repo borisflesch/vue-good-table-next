@@ -728,7 +728,7 @@ export default {
 					? headerRow.children.length
 					: 0;
 				return total + childrenCount;
-			}, 0);
+      }, this.groupOptions.enabled ? this.processedRows.length : 0);
 			return total;
 		},
 		totalPageRowCount() {
