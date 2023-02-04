@@ -30,7 +30,7 @@ Row object property that this column corresponds to. This can be:
 columns: [
   {
     label: 'name',
-    field: this.fealdFn,
+    field: this.fieldFn,
   },
   // ...
 ]
