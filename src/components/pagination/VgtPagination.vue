@@ -180,6 +180,16 @@ export default {
       return remainder === 0 ? quotient : quotient + 1
     },
 
+    // Can go to first page
+    firstIsPossible() {
+      return this.currentPage > 1
+    },
+
+    // Can go to last page
+    lastIsPossible() {
+      return this.currentPage < Math.ceil(this.total / this.currentPerPage)
+    },
+
     // Can go to next page
     nextIsPossible() {
       return this.currentPage < this.pagesCount
