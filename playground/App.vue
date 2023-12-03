@@ -1,23 +1,24 @@
 <template>
   <div>
-   <vue-good-table
-     :columns="columns"
-     :rows="rows"
-     :expand-rows-options="{
-       enabled: true,
-     }"
-     :search-options="{
-       enabled: true,
-     }"
-   >
+    <vue-good-table
+      :columns="columns"
+      :rows="rows"
+      :expand-rows-options="{
+        enabled: true,
+      }"
+      :search-options="{
+        enabled: true,
+      }"
+    >
     </vue-good-table>
     {{ selectedIds }}
-    <button @click="rows = [];">empty row</button>
+    <button @click="rows = []">empty row</button>
     <button @click="resetTable">reset Table</button>
     <button @click="hideColumn">hide column</button>
     <button @click="setFilter">SetFilter</button>
     <button @click="changePage">Change Page</button>
-    <input type="text" v-model="searchTerm">
+    <hr />
+    <input type="text" v-model="searchTerm" />
     <vue-good-table
       ref="my-table"
       :enable-row-expand="true"
@@ -37,7 +38,6 @@
         selectOnCheckboxOnly: false,
         disableSelectInfo: false,
       }"
-
       theme="polar-bear"
       styleClass="vgt-table"
       :sort-options="{
@@ -47,14 +47,17 @@
       :search-options="{
         enabled: true,
         skipDiacritics: true,
-      }">
+      }"
+    >
       <template #table-row="props">
         <span v-if="props.column.field == 'name'">
-          {{props.row.name}} - 
-          <span style="font-weight: bold; color: red;">expandedRow={{props.expandedRow}}</span> 
+          {{ props.row.name }} -
+          <span style="font-weight: bold; color: red"
+            >expandedRow={{ props.expandedRow }}</span
+          >
         </span>
         <span v-else>
-          {{props.formattedRow[props.column.field]}}
+          {{ props.formattedRow[props.column.field] }}
         </span>
       </template>
       <template #row-details="props">
@@ -62,15 +65,15 @@
       </template>
     </vue-good-table>
     <h3>Remote Table</h3>
-    <remote-table/>
+    <remote-table />
     <h3>Grouped Table</h3>
-     <grouped-table></grouped-table>
+    <grouped-table></grouped-table>
   </div>
 </template>
 
 <script>
-import GroupedTable from './grouped-table.vue';
-import RemoteTable from './remote-table.vue';
+import GroupedTable from './grouped-table.vue'
+import RemoteTable from './remote-table.vue'
 
 export default {
   name: 'test',
@@ -86,6 +89,7 @@ export default {
         perPage: 3,
         perPageDropdown: [3, 5, 10, 200, 300, 500, 1000],
         perPageDropdownEnabled: true,
+        jumpFirstOrLast: true,
         // infoFn: (params) => `alala ${params.firstRecordOnPage} to ${params.lastRecordOnPage} of ${params.totalRecords}`,
       },
       columns: [
@@ -151,10 +155,7 @@ export default {
           type: 'boolean',
           filterOptions: {
             enabled: true,
-            filterDropdownItems: [
-              true,
-              false,
-            ],
+            filterDropdownItems: [true, false],
           },
         },
         {
@@ -162,12 +163,9 @@ export default {
           field: this.fieldExact,
           filterOptions: {
             enabled: true,
-            filterDropdownItems: [
-              'match',
-              'rematch',
-            ],
+            filterDropdownItems: ['match', 'rematch'],
           },
-        }
+        },
       ],
       rows: [
         // { id:1, name:"John", age: 20, createdAt: '2018-02-18T00:00:43-05:00',score: 0.03343 },
@@ -180,8 +178,9 @@ export default {
           bool: true,
           exact: 'match',
           average: 1,
-          children: ["test"],
-          expandedRowContent: "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam",
+          children: ['test'],
+          expandedRowContent:
+            'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam',
         },
         {
           id: 3,
@@ -191,7 +190,7 @@ export default {
           score: 0.03343,
           bool: true,
           exact: 'match',
-          average: null
+          average: null,
         },
         {
           id: 4,
@@ -200,7 +199,7 @@ export default {
           createdAt: '2011-10-11',
           score: 0.03343,
           bool: false,
-          exact: null
+          exact: null,
         },
         {
           id: 5,
@@ -211,7 +210,8 @@ export default {
           bool: null,
           exact: 'rematch',
           average: 2,
-          expandedRow: "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam",
+          expandedRow:
+            'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam',
         },
         {
           id: 5,
@@ -221,7 +221,7 @@ export default {
           score: 0.03343,
           bool: null,
           exact: 'rematch',
-          average: 3
+          average: 3,
         },
         {
           id: 5,
@@ -231,7 +231,7 @@ export default {
           score: 0.03343,
           bool: null,
           exact: null,
-          average: 2
+          average: 2,
         },
         {
           id: 6,
@@ -241,7 +241,7 @@ export default {
           score: 0.03343,
           bool: true,
           exact: 'match',
-          average: 1.5
+          average: 1.5,
         },
         {
           id: 7,
@@ -251,7 +251,7 @@ export default {
           score: null,
           bool: 'false',
           exact: null,
-          average: 1
+          average: 1,
         },
         {
           id: 8,
@@ -261,42 +261,42 @@ export default {
           score: 0.03343,
           bool: true,
           exact: 'rematch',
-          average: 1
+          average: 1,
         },
       ],
-    };
+    }
   },
   methods: {
     fieldValid(row) {
-      return row.bool;
+      return row.bool
     },
     fieldExact(row) {
-      return row.exact;
+      return row.exact
     },
     changePage() {
-      this.currentPage += 1;
-      this.paginationOptions.setCurrentPage = this.currentPage;
+      this.currentPage += 1
+      this.paginationOptions.setCurrentPage = this.currentPage
     },
     funcValue(row) {
-      return row.age + 5;
+      return row.age + 5
     },
     tdClassFunc(row) {
       if (row.age > 50) {
-        return 'red';
+        return 'red'
       }
-      return 'green';
+      return 'green'
     },
     getRowStyle() {
-      return '';
+      return ''
     },
     hideColumn() {
-      this.columns[0].hidden = true;
+      this.columns[0].hidden = true
     },
     resetTable() {
-      this.$refs['my-table'].reset();
+      this.$refs['my-table'].reset()
     },
     onSelectAll(params) {
-      console.log(params);
+      console.log(params)
       // this.unselectAll();
       // if (params.selected) {
       //   for (let i = 0; i < params.selectedRows.length; i++) {
@@ -309,11 +309,11 @@ export default {
     },
     unselectAll() {
       for (let i = 0; i < this.rows.length; i++) {
-        this.$set(this.rows[i], 'selected', false);
+        this.$set(this.rows[i], 'selected', false)
       }
     },
     toggleSelectRow(params) {
-      console.log(params.row, params.pageIndex, params.selected);
+      console.log(params.row, params.pageIndex, params.selected)
       // if (this.rows[row.originalIndex].selected) {
       //   this.$set(this.rows[row.originalIndex], 'selected', false);
       // } else {
@@ -321,15 +321,15 @@ export default {
       // }
     },
     selectCell(params) {
-      console.log('select cell called');
-      console.log(params);
+      console.log('select cell called')
+      console.log(params)
     },
     searchedRow(params) {
-      console.log(params);
+      console.log(params)
     },
     setFilter() {
       // this.columns[0].filterOptions.filterValue = 'John';
-      this.columns[0].filterOptions.filterValue = 'Chris';
+      this.columns[0].filterOptions.filterValue = 'Chris'
       // const column1 = JSON.parse(JSON.stringify(this.columns[0]));
       // column1.filterOptions.filterValue = 'John';
       // this.$set(this.columns, 0, column1);
@@ -346,104 +346,104 @@ export default {
     },
     autofilter(type) {
       if (type === 'name') {
-        this.columns[0].filterOptions.filterValue = 'John';
+        this.columns[0].filterOptions.filterValue = 'John'
       }
       if (type === 'age') {
-        this.columns[1].filterOptions.filterValue = '>30';
+        this.columns[1].filterOptions.filterValue = '>30'
       }
       if (type === 'reset') {
-        this.columns[0].filterOptions.filterValue = '';
-        this.columns[1].filterOptions.filterValue = '';
+        this.columns[0].filterOptions.filterValue = ''
+        this.columns[1].filterOptions.filterValue = ''
         // this.columns[1].filterOptions.filterValue = null;
       }
     },
 
     filterAge(data, filterString) {
-      if ((filterString === '>30') && (parseInt(data, 10) > 30)) {
-        return true;
+      if (filterString === '>30' && parseInt(data, 10) > 30) {
+        return true
       }
-      if ((filterString === '<=30') && (parseInt(data, 10) <= 30)) {
-        return true;
+      if (filterString === '<=30' && parseInt(data, 10) <= 30) {
+        return true
       }
-      return false;
+      return false
     },
 
     onClick() {
-      console.log('clicked');
-      this.rowStyleClass = 'green';
+      console.log('clicked')
+      this.rowStyleClass = 'green'
     },
     addRow() {
       this.rows.push({
         name: `Chris ${Math.random()}`,
         age: 20,
-      });
+      })
     },
     editRow() {
-      this.rows[12].age = 300;
+      this.rows[12].age = 300
     },
     sortFn(x, y, col) {
       if (x < y) {
-        return -1;
+        return -1
       }
       if (x > y) {
-        return 1;
+        return 1
       }
-      return 0;
+      return 0
     },
     formatAge(value) {
-      return `lala${value}lala`;
+      return `lala${value}lala`
     },
     addFilter() {
-      this.columns[2].filterValue = 'Jane';
-      console.log(this.columns);
+      this.columns[2].filterValue = 'Jane'
+      console.log(this.columns)
     },
 
     // events
     // ===================================================
     onPerPageChange(evt) {
       // { currentPage: 1, currentPerPage: 10, total: 5 }
-      console.log('per-page-changed:');
-      console.log(evt);
+      console.log('per-page-changed:')
+      console.log(evt)
     },
 
     onPageChange(evt) {
       // { currentPage: 1, currentPerPage: 10, total: 5 }
-      console.log('page-changed:');
-      console.log(evt);
+      console.log('page-changed:')
+      console.log(evt)
     },
 
     onColumnFilter(params) {
       // { currentPage: 1, currentPerPage: 10, total: 5 }
-      console.log('on-column-filters:');
-      console.log(params);
+      console.log('on-column-filters:')
+      console.log(params)
     },
 
     onSearch(params) {
-      console.log('on-search:');
-      console.log(params);
+      console.log('on-search:')
+      console.log(params)
     },
 
     onSortChange(params) {
-      console.log('on-sort-change:');
-      console.log(params);
-      const [nameFilter] = params;
-      console.log(typeof nameFilter.field === 'function');
+      console.log('on-sort-change:')
+      console.log(params)
+      const [nameFilter] = params
+      console.log(typeof nameFilter.field === 'function')
     },
 
     onRowClick(params) {
-      console.log('on-row-click');
-      console.log(params);
+      console.log('on-row-click')
+      console.log(params)
     },
 
     onSelectChanged(params) {
-      console.log(params);
+      console.log(params)
       const selectedIds = params.selectedRows.reduce((acc, row) => {
-        acc.push(row.id);
-        return acc;
-      }, []);
-      console.log(params.selectedRows);
-      console.log(selectedIds);
-      this.selectedIds = selectedIds;
+        acc.push(row.id)
+        return acc
+      }, [])
+      console.log(params.selectedRows)
+      console.log(selectedIds)
+      this.selectedIds = selectedIds
     },
   },
   mounted() {
@@ -457,23 +457,23 @@ export default {
     'grouped-table': GroupedTable,
     RemoteTable,
   },
-};
+}
 </script>
 
 <style lang="css">
-  .row-style{
-    background-color: red;
-  }
-  *{
-    font-family: 'Open Sans';
-  }
-  .red{
-    background-color: red;
-  }
-  .green{
-    background-color: green;
-  }
-  /* .vgt-selection-info-row.info-custom{
+.row-style {
+  background-color: red;
+}
+* {
+  font-family: 'Open Sans';
+}
+.red {
+  background-color: red;
+}
+.green {
+  background-color: green;
+}
+/* .vgt-selection-info-row.info-custom{
     background: red;
   } */
 </style>

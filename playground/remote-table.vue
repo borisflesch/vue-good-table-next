@@ -1,27 +1,31 @@
 <template>
-<div>
-  <vue-good-table
-    :columns="columns"
-    :rows="rows"
-    :totalRows="totalRecords"
-    mode="remote"
-    v-on:page-change="onPageChange"
-    v-on:sort-change="onSortChange"
-    v-on:column-filter="onColumnFilter"
-    v-on:per-page-change="onPerPageChange"
-    compactMode
-    :pagination-options="{
-      enabled: true,
-      perPage: 5,
-      perPageDropdown: [20, 50, 100, 200],
-      dropdownAllowAll: false,
-    }"
-    :search-options="{
-      enabled: false,
-    }"
-    styleClass="vgt-table condensed bordered striped">
-  </vue-good-table>
-</div>
+  <div>
+    <vue-good-table
+      :columns="columns"
+      :rows="rows"
+      :totalRows="totalRecords"
+      mode="remote"
+      v-on:page-change="onPageChange"
+      v-on:sort-change="onSortChange"
+      v-on:column-filter="onColumnFilter"
+      v-on:per-page-change="onPerPageChange"
+      compactMode
+      :pagination-options="{
+        enabled: true,
+        perPage: 2,
+        perPageDropdown: [20, 50, 100, 200],
+        dropdownAllowAll: false,
+        jumpFirstOrLast: true,
+        firstText: 'اولین',
+        lastText: 'آخرین',
+      }"
+      :search-options="{
+        enabled: false,
+      }"
+      styleClass="vgt-table condensed bordered striped"
+    >
+    </vue-good-table>
+  </div>
 </template>
 
 <script>
@@ -83,10 +87,7 @@ export default {
           type: 'boolean',
           filterOptions: {
             enabled: true,
-            filterDropdownItems: [
-              true,
-              false,
-            ],
+            filterDropdownItems: [true, false],
           },
         },
       ],
@@ -94,8 +95,7 @@ export default {
       totalRecords: 0,
       serverParams: {
         // a map of column filters example: {name: 'john', age: '20'}
-        columnFilters: {
-        },
+        columnFilters: {},
         sort: {
           field: '', // example: 'name'
           type: '', // 'asc' or 'desc'
@@ -179,52 +179,51 @@ export default {
           bool: true,
         },
       ],
-    };
+    }
   },
-  computed: {
-  },
+  computed: {},
   methods: {
     updateParams(newProps) {
       // console.log(newProps);
-      this.serverParams = Object.assign({}, this.serverParams, newProps);
+      this.serverParams = Object.assign({}, this.serverParams, newProps)
     },
 
     onPageChange(params) {
-      console.log('page change called');
-      console.log(params);
-      this.updateParams({page: params.currentPage});
-      this.loadItems();
+      console.log('page change called')
+      console.log(params)
+      this.updateParams({ page: params.currentPage })
+      this.loadItems()
     },
 
     onPerPageChange(params) {
-      console.log('per page change called');
-      console.log(params);
-      this.updateParams({ perPage: params.currentPerPage });
-      this.loadItems();
+      console.log('per page change called')
+      console.log(params)
+      this.updateParams({ perPage: params.currentPerPage })
+      this.loadItems()
     },
 
     onSortChange(params) {
-      console.log(params);
+      console.log(params)
       this.updateParams({
         sort: params,
-      });
-      this.loadItems();
+      })
+      this.loadItems()
     },
 
     onColumnFilter(params) {
-      console.log('on column filter change');
-      console.log(params);
-      this.updateParams(params);
-      this.loadItems();
+      console.log('on column filter change')
+      console.log(params)
+      this.updateParams(params)
+      this.loadItems()
     },
 
     // load items is what brings back the rows from server
     loadItems() {
-      console.log(this.serverParams);
-      this.getFromServer(this.serverParams).then((response) => {
-        this.totalRecords = response.totalRecords;
-        this.rows = response.rows;
-      });
+      console.log(this.serverParams)
+      this.getFromServer(this.serverParams).then(response => {
+        this.totalRecords = response.totalRecords
+        this.rows = response.rows
+      })
     },
 
     getFromServer() {
@@ -233,19 +232,16 @@ export default {
           resolve({
             rows: JSON.parse(JSON.stringify(this.serverRows)),
             totalRecords: this.serverRows.length,
-          });
-        }, 1000);
-      });
+          })
+        }, 1000)
+      })
     },
   },
   mounted() {
-    this.loadItems();
+    this.loadItems()
   },
-  components: {
-  },
-};
+  components: {},
+}
 </script>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
