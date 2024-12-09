@@ -1,17 +1,19 @@
+@use "variables";
+
 $footer-font-size: 1.1rem;
 
 .vgt-wrap__actions-footer{
-  border: 1px solid $border-color;
+  border: 1px solid variables.$border-color;
 }
 .vgt-wrap__footer{
-  color: $text-color;
+  color: variables.$text-color;
   font-size:  $footer-font-size;
   padding:  1em;
-  border: 1px solid $border-color;
-  background: linear-gradient($thead-bg-color-1, $thead-bg-color-2);
+  border: 1px solid variables.$border-color;
+  background: linear-gradient(variables.$thead-bg-color-1, variables.$thead-bg-color-2);
   .footer__row-count{
     position: relative;
-    padding-right: 3px;
+    padding-inline-end: 3px;
     &__label, &__select{
       display: inline-block;
       vertical-align: middle;
@@ -27,20 +29,20 @@ $footer-font-size: 1.1rem;
       border: 0;
       border-radius: 0;
       height: auto;
-      margin-left: 8px;
-      color:  $text-color;
+      margin-inline-start: 8px;
+      color:  variables.$text-color;
       font-weight: bold;
       -webkit-appearance: none; 
       -moz-appearance: none;
       appearance: none;
-      padding-right: 15px;
-      padding-left: 5px;
+      padding-inline-end: 15px;
+      padding-inline-start: 5px;
       &::-ms-expand{
         display: none;
       }
       &:focus{
         outline: none;
-        border-color: $link-color;
+        border-color: variables.$link-color;
       }
     }
     &::after{
@@ -49,12 +51,11 @@ $footer-font-size: 1.1rem;
       position: absolute;
       height: 0px;
       width: 0px;
-      right: 6px;
+      inset-inline-end: 6px;     
       top: 50%;
       margin-top: -1px;
-      border-top:  6px solid $text-color;
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
+      border-top:  6px solid variables.$text-color;
+      border-inline: 6px solid transparent;
       border-bottom: none;
       pointer-events: none
     }
@@ -67,7 +68,7 @@ $footer-font-size: 1.1rem;
     &__page-btn, &__info, &__page-info{
       display: inline-block;
       vertical-align: middle;
-      color: $secondary-text-color;
+      color: variables.$secondary-text-color;
     }
     &__page-btn{
       -webkit-appearance: none;
@@ -76,7 +77,7 @@ $footer-font-size: 1.1rem;
       background: transparent;
       border: none;
       text-decoration: none;
-      color: $text-color;
+      color: variables.$text-color;
       font-weight: bold;
       white-space:nowrap;
       vertical-align: middle;
@@ -87,11 +88,11 @@ $footer-font-size: 1.1rem;
       &.disabled:hover {
         opacity: 0.5;
         cursor: not-allowed;
-        .chevron.left:after{
-          border-right-color: $text-color;
+        .chevron.start:after{
+          border-inline-start-color: variables.$text-color;
         }
-        .chevron.right:after{
-          border-left-color: $text-color;
+        .chevron.end:after{
+          border-inline-end-color: variables.$text-color;
         }
       }
       span{
@@ -111,26 +112,20 @@ $footer-font-size: 1.1rem;
           content:  '';
           position:  absolute;
           display:  block;
-          left:  50%;
+          inset-inline-start:  50%;
           top:  50%;
           margin-top:  -6px;
           border-top: 6px solid transparent;
           border-bottom: 6px solid transparent;
+          margin-inline-start:  -3px;
         }
-        &.left::after{
-          border-right:  6px solid $link-color;
-          margin-left:  -3px;
-        }
-      
-        &.right::after{
-          border-left:  6px solid $link-color;
-          margin-left:  -3px;
-        }
+        &.start::after {border-inline-end:  6px solid variables.$link-color;}
+        &.end::after {border-inline-start:  6px solid variables.$link-color;}
       }
     }
     &__info, &__page-info{
       display: inline-block;
-      margin:  0px 16px;
+      margin-inline:   16px;
     }
     &__page-info{
       span{
@@ -142,7 +137,7 @@ $footer-font-size: 1.1rem;
         text-align: center;
         vertical-align: middle;
         display: inline-block;
-        margin: 0px 10px;
+        margin-inline: 10px;
         font-weight: bold;
       }
     }

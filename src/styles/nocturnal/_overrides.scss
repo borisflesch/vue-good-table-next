@@ -1,11 +1,14 @@
-$thead-bg-color-1: #2C394F;
-$thead-bg-color-2: #2C394F;
-$chevron-color: lighten($thead-bg-color-1, 10%);
+@use "../variables";
 
-$text-color: #C7CED8;
-$secondary-text-color: #8290A7 ;
-$border-color: #435169;
-$input-border-color: $border-color;
+@use 'sass:color';
+variables.$thead-bg-color-1: #2C394F;
+variables.$thead-bg-color-2: #2C394F;
+variables.$chevron-color: color.adjust(variables.$thead-bg-color-1, $lightness: 10%);
 
-$table-bg: #324057;
-$highlight-color: #445168;
+variables.$text-color: #C7CED8;
+variables.$secondary-text-color: #8290A7 ;
+variables.$border-color: #435169;
+variables.$input-border-color: variables.$border-color;
+
+variables.$table-bg: #324057;
+variables.$highlight-color: #445168;

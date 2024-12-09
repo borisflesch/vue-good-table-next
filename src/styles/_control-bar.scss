@@ -1,11 +1,14 @@
+@use "variables";
+@use 'sass:color';
+
 .vgt-global-search{
   padding: 5px 0px;
   display: flex;
   flex-wrap: nowrap;
   align-items: stretch;
-  border:  1px solid $border-color;
+  border:  1px solid variables.$border-color;
   border-bottom: 0px;
-  background: linear-gradient($thead-bg-color-1, $thead-bg-color-2);
+  background: linear-gradient(variables.$thead-bg-color-1, variables.$thead-bg-color-2);
   form {
     display: flex;
     label {
@@ -56,13 +59,13 @@
 }
 
 .vgt-selection-info-row{
-  background: $notify-bg-color;
+  background: variables.$notify-bg-color;
   padding: 5px 16px;
   font-size: 13px;
-  border-top:  1px solid $border-color;
-  border-left:  1px solid $border-color;
-  border-right:  1px solid $border-color;
-  color: lighten($notify-fg-color, 10%);
+  border-top:  1px solid variables.$border-color;
+  border-left:  1px solid variables.$border-color;
+  border-right:  1px solid variables.$border-color;
+  color:  color.adjust(variables.$notify-fg-color, $lightness: 10%);
   font-weight: bold;
   a{
     font-weight: bold;

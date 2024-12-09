@@ -23,7 +23,7 @@
       &:before {
         content: attr(data-label);
         position: relative;
-        float: left;
+        float: inline-start;
         left: 0;
         width: 40%;
         padding-left: 10px;

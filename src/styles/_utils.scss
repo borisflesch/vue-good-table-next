@@ -1,23 +1,19 @@
+@use "variables";
+
 /* Utility styles
 ************************************************/
-.vgt-right-align{
-  text-align: right;
-}
 
-.vgt-left-align{
-  text-align: left;
-}
 
 .vgt-center-align{
   text-align: center;
 }
 
-.vgt-pull-left{
-  float:  left !important;
+.vgt-pull-start{
+  float:  inline-start !important;
 }
 
-.vgt-pull-right{
-  float:  right !important;
+.vgt-pull-end{
+  float:  inline-end !important;
 }
 
 .vgt-clearfix::after {
@@ -26,14 +22,14 @@
   clear: both;
 }
 
-.vgt-responsive {
+.vgt-responsive-old {
   width: 100%;
   overflow-x: auto;
   position: relative;
 }
 
 .vgt-text-disabled{
-  color: $secondary-text-color;
+  color: variables.$secondary-text-color;
 }
 
 .sr-only {

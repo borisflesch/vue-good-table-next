@@ -4,8 +4,11 @@ import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import VuePlugin from '@vitejs/plugin-vue'
 import scss from 'rollup-plugin-scss'
+import chalk from 'chalk'
+import terser from '@rollup/plugin-terser';
 
-const pkg = require('./package.json')
+import  pkg from './package.json' with { type: "json" };
+
 const name = pkg.name
 
 const banner = `/*!
@@ -59,7 +62,7 @@ export default packageConfigs
 
 function createConfig(format, output, plugins = []) {
   if (!output) {
-    console.log(require('chalk').yellow(`invalid format: "${format}"`))
+    console.log(chalk.yellow(`invalid format: "${format}"`))
     process.exit(1)
   }
 
@@ -170,7 +173,6 @@ function createProductionConfig(format) {
 }
 
 function createMinifiedConfig(format) {
-  const { terser } = require('rollup-plugin-terser')
   return createConfig(
     format,
     {

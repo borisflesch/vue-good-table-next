@@ -1,21 +1,26 @@
+@use "../black-rhino/overrides";
+@use "../variables";
+@use 'sass:color';
+
+
 $thead-bg-color-1: #E4EBF3;
-$thead-bg-color-2: #E4EBF3;
+variables.$thead-bg-color-2: #E4EBF3;
 $thead-bg-color-3: #f7fafc;
 
-$header-color: darken(#8395aa, 10%);
-$text-color: #394567;
-$link-color: #5e72e4;
+$header-color: color.adjust(#8395aa, $lightness: -10%);
+variables.$text-color: #394567;
+variables.$link-color: #5e72e4;
 $focus-color: #4D96FB;
-$text-color-td: #525f7f;
-$text-shadow-color: lighten(#2C394F, 10%);
+overrides.$text-color-td: #525f7f;
+overrides.$text-shadow-color: color.adjust(#2C394F, $lightness: 10%);
 
-$secondary-text-color: rgb(152, 165, 185) ;
-$border-color: #e3e8ee;
-$border-color-td: #E4EBF3;
+variables.$secondary-text-color: rgb(152, 165, 185) ;
+variables.$border-color: #e3e8ee;
+overrides.$border-color-td: #E4EBF3;
 
-$input-border-color: transparent;
-$input-bg: #34445f;
+variables.$input-border-color: transparent;
+overrides.$input-bg: #34445f;
 
-$table-bg: #FFFFFF;
-$highlight-color:#fff;
+variables.$table-bg: #FFFFFF;
+variables.$highlight-color:#fff;
 $white: #FFFFFF;

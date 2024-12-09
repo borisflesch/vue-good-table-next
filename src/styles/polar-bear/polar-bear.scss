@@ -1,4 +1,8 @@
-@import './overrides';
+@use 'overrides';
+@use 'sass:color';
+@use "../black-rhino/overrides" as overrides2;
+@use "../variables";
+
 // suggested by wifey
 .vgt-inner-wrap{
   border-radius: 0.25rem;
@@ -9,109 +13,108 @@
   border-spacing: 0;
   border-collapse: separate;
   font-size: 1rem;
-  background-color: $white;
-  border: 1px solid $border-color;
+  background-color: overrides.$white;
+  border: 1px solid variables.$border-color;
   border-bottom: none;
   border-radius: 0.25rem;
   // td
   & td {
     padding: 1em .75em 1em .75em;
-    border-bottom:  1px solid $border-color-td;
-    color: $text-color-td;
-    &.vgt-right-align{
-      text-align: right;
-    }
+    border-bottom:  1px solid overrides2.$border-color-td;
+    color: overrides2.$text-color-td;
+    text-align: start;
+  
   }
 
   //th
   & th.line-numbers, & th.vgt-checkbox-col {
-    color: $text-color;
-    border-right: 1px solid $border-color;
-    background: $thead-bg-color-3;
+    color: variables.$text-color;
+    border-inline-end: 1px solid variables.$border-color;
+    background: overrides.$thead-bg-color-3;
   }
   thead th{
-    color: $header-color;
+    color: overrides.$header-color;
     font-weight: 600;
     // text-shadow: 1px 1px $text-shadow-color;
-    border-bottom:  1px solid $border-color;
-    background: $thead-bg-color-3;
+    border-bottom:  1px solid variables.$border-color;
+    background: overrides.$thead-bg-color-3;
     &.sorting-asc, &.sorting-desc {
-      color: $link-color;
+      color: variables.$link-color;
     }
     &.sorting-desc{
       &:before{
-        border-top: 5px solid lighten($link-color, 5%);
+        border-top: 5px color.adjust(variables.$link-color, $lightness: 5%) solid ;
       }
     }
     &.sorting-asc{
       &:after{
-        border-bottom: 5px solid lighten($link-color, 5%);
+        border-bottom: 5px solid  color.adjust(variables.$link-color, $lightness: 5%) ;
       }
     }
 
     .vgt-input, .vgt-select{
       height: 2.75em;
       box-shadow: 0 1px 2px 0 rgba(0,0,0,.05);
-      border: 1px solid $border-color-td;
+      border: 1px solid overrides2.$border-color-td;
     }
     
     .vgt-input:focus, .vgt-select:focus {
       outline: 0;
-      border-color: lighten($focus-color, 25%);
+      border-color: color.adjust(overrides.$focus-color, $lightness: 25%);
     }
   }
   thead tr:first-child{
     th:first-child{
-      border-top-left-radius: 0.25rem;
+      border-start-start-radius: 0.25rem;
     }
     th:last-child{
-      border-top-right-radius: 0.25rem;
+      border-start-end-radius: 0.25rem;
     }
   }
   
   //bordered
   &.bordered td {
-    border: 1px solid $border-color;
-    background: $white;
+    border: 1px solid variables.$border-color;
+    background: overrides.$white;
   }
 
   &.bordered th {
     // border: none;
-    border: 1px solid $border-color;
+    border: 1px solid variables.$border-color;
   }
 }
 
 .vgt-wrap.polar-bear{
   .vgt-wrap__footer{
-    color: $text-color;
-    border: 1px solid $border-color;
+    color: variables.$text-color;
+    border: 1px solid variables.$border-color;
     border-bottom: 0px;
     border-top: 0px;
-    background: linear-gradient($thead-bg-color-3, $thead-bg-color-3);
+    background: linear-gradient(overrides.$thead-bg-color-3, overrides.$thead-bg-color-3);
     .footer__row-count{
       position: relative;
-      padding-right: 3px;
+      padding-inline-end: 3px;
       &__label{
-        color: $secondary-text-color;
+        color: variables.$secondary-text-color;
       }
       &__select{
         text-align: center;
-        color:  $text-color-td;
-        background: $table-bg;
+        color:  overrides2.$text-color-td;
+        background: variables.$table-bg;
         border: none;
         -webkit-appearance: none; 
         -moz-appearance: none;
         appearance: none;
         padding: 5px;
-        padding-right: 30px;
+        padding-inline-end: 30px;
         border-radius: 3px;
         box-shadow: 0 1px 2px 0 rgba(0,0,0,.05);
-        border: 1px solid $border-color-td;
+        border: 1px solid overrides2.$border-color-td;
         &::-ms-expand{
           display: none;
         }
         &:focus{
-          border-color: $link-color;
+          border-color: variables.$link-color;
         }
       }
       &::after{
@@ -120,58 +123,57 @@
         position: absolute;
         height: 0px;
         width: 0px;
-        right: 15px;
+        inset-inline-end: 15px;
         top: 50%;
         margin-top: -3px;
-        border-top:  6px solid $text-color-td;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
+        border-top:  6px solid overrides2.$text-color-td;
+        border-inline: 6px solid transparent;
         border-bottom: none;
         pointer-events: none
       }
     }
     .footer__navigation{
       &__page-btn{
-        color: $text-color;
+        color: variables.$text-color;
         &.disabled,
         &.disabled:hover {
           .chevron.left:after{
-            border-right-color: $text-color;
+            border-inline-start-color: variables.$text-color;
           }
           .chevron.right:after{
-            border-left-color: $text-color;
+            border-inline-end-color: variables.$text-color;
           }
         }
       }
       &__info, &__page-info{
-        color: $text-color;
+        color: variables.$text-color;
       }
     }
   }
 
   // control bar
   .vgt-global-search{
-    border:  1px solid $border-color;
+    border:  1px solid variables.$border-color;
     border-bottom: 0px;
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
-    background: $thead-bg-color-3;
+    border-start-start-radius: 3px;
+    border-start-end-radius: 3px;
+    background: overrides.$thead-bg-color-3;
   }
   .vgt-global-search__input{
     .input__icon{
       .magnifying-glass{
-        border: 2px solid darken($border-color, 2%);
+        border: 2px solid  color.adjust(variables.$border-color, $lightness: -2%);
         &:before{
-          background: darken($border-color, 2%);
+          background:  color.adjust(variables.$border-color, $lightness: -2%);
         }
       }
     }
     .vgt-input, .vgt-select{
       height: 2.75em;
       box-shadow: 0 1px 2px 0 rgba(0,0,0,.05);
-      border: 1px solid $border-color-td;
+      border: 1px solid overrides2.$border-color-td;
       &::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-        color: $text-color;
+        color: variables.$text-color;
         opacity: 0.3; /* Firefox */
       }
     }

@@ -1,49 +1,53 @@
-@import './overrides';
+@use 'sass:color';
+@use 'overrides';
+@use "../variables.scss";
+
+
 // suggested by wifey
 .vgt-table.nocturnal{
-  border: 1px solid $border-color;
-  background-color: $table-bg;
+  border: 1px solid variables.$border-color;
+  background-color: variables.$table-bg;
 
   & tr.clickable {
     &:hover{
-      background-color: $highlight-color;
+      background-color: variables.$highlight-color;
     }
   }
 
   // td
   & td {
-    border-bottom:  1px solid $border-color;
-    color: $text-color;
+    border-bottom:  1px solid variables.$border-color;
+    color: variables.$text-color;
   }
 
   //th
   & th.line-numbers, & th.vgt-checkbox-col {
-    color: $text-color;
-    border-right: 1px solid $border-color;
-    background: linear-gradient($thead-bg-color-1, $thead-bg-color-2);
+    color: variables.$text-color;
+    border-right: 1px solid variables.$border-color;
+    background: linear-gradient(variables.$thead-bg-color-1, variables.$thead-bg-color-2);
   }
   thead th{
-    color: $text-color;
-    border-bottom:  1px solid $border-color;
-    background: linear-gradient($thead-bg-color-1, $thead-bg-color-2);
+    color: variables.$text-color;
+    border-bottom:  1px solid variables.$border-color;
+    background: linear-gradient(variables.$thead-bg-color-1, variables.$thead-bg-color-2);
     &.sortable {
-      // color: lighten($text-color, 15%);
+      // color: _$text-color, 15%);
       &:before{
-        border-top-color: $chevron-color;
+        border-top-color: variables.$chevron-color;
       }
       &:after{
-        border-bottom-color: $chevron-color;
+        border-bottom-color: variables.$chevron-color;
       }
       &.sorting-asc{
         color: white;
         &:after{
-          border-bottom-color: $link-color;
+          border-bottom-color: variables.$link-color;
         }
       }
       &.sorting-desc {
         color: white;
         &:before{
-          border-top-color: $link-color;
+          border-top-color: variables.$link-color;
         }
       }
     }
@@ -51,16 +55,16 @@
   
   //bordered
   &.bordered td, &.bordered th {
-      border: 1px solid $border-color;
+      border: 1px solid variables.$border-color;
   }
 
   //input
   .vgt-input, .vgt-select{
-    color: $text-color;
-    background-color: darken($thead-bg-color-2, 5%);
-    border: 1px solid $input-border-color;
+    color: variables.$text-color;
+    background-color: color.adjust(variables.$thead-bg-color-2, $lightness: -5%);
+    border: 1px solid variables.$input-border-color;
     &::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-      color: $text-color;
+      color: variables.$text-color;
       opacity: 0.3; /* Firefox */
     }
   }
@@ -68,17 +72,17 @@
 
 .vgt-wrap.nocturnal{
   .vgt-wrap__footer{
-    color: $text-color;
-    border: 1px solid $border-color;
-    background: linear-gradient($thead-bg-color-1, $thead-bg-color-2);
+    color: variables.$text-color;
+    border: 1px solid variables.$border-color;
+    background: linear-gradient(variables.$thead-bg-color-1, variables.$thead-bg-color-2);
     .footer__row-count{
       position: relative;
       &__label{
-        color: $secondary-text-color;
+        color: variables.$secondary-text-color;
       }
       &__select{
-        color:  $text-color;
-        background: darken($thead-bg-color-2, 5%);
+        color:  variables.$text-color;
+        background: color.adjust(variables.$thead-bg-color-2, $lightness: -5%);
         border: none;
         -webkit-appearance: none; 
         -moz-appearance: none;
@@ -88,7 +92,7 @@
         border-radius: 3px;
         text-align: center;
         &:focus{
-          border-color: $link-color;
+          border-color: variables.$link-color;
         }
       }
       &::after{
@@ -100,7 +104,7 @@
         right: 6px;
         top: 50%;
         margin-top: -1px;
-        border-top:  6px solid $text-color;
+        border-top:  6px solid variables.$text-color;
         border-left: 6px solid transparent;
         border-right: 6px solid transparent;
         border-bottom: none;
@@ -109,43 +113,43 @@
     }
     .footer__navigation{
       &__page-btn{
-        color: $text-color;
+        color: variables.$text-color;
         &.disabled,
         &.disabled:hover {
           .chevron.left:after{
-            border-right-color: $text-color;
+            border-right-color: variables.$text-color;
           }
           .chevron.right:after{
-            border-left-color: $text-color;
+            border-left-color: variables.$text-color;
           }
         }
       }
       &__info, &__page-info{
-        color: $secondary-text-color;
+        color: variables.$secondary-text-color;
       }
     }
   }
 
   // control bar
   .vgt-global-search{
-    border:  1px solid $border-color;
-    background: linear-gradient($thead-bg-color-1, $thead-bg-color-2);
+    border:  1px solid variables.$border-color;
+    background: linear-gradient(variables.$thead-bg-color-1, variables.$thead-bg-color-2);
   }
   .vgt-global-search__input{
     .input__icon{
       .magnifying-glass{
-        border: 2px solid darken($border-color, 2%);
+        border: 2px solid color.adjust(variables.$border-color, $lightness: -2%);
         &:before{
-          background: darken($border-color, 2%);
+          background:  color.adjust(variables.$border-color, $lightness: -2%);
         }
       }
     }
     .vgt-input, .vgt-select{
-      color: $text-color;
-      background-color: darken($thead-bg-color-2, 5%);
-      border: 1px solid $input-border-color;
+      color: variables.$text-color;
+      background-color: color.adjust(variables.$thead-bg-color-2, $lightness: -5%);
+      border: 1px solid variables.$input-border-color;
       &::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-        color: $text-color;
+        color: variables.$text-color;
         opacity: 0.3; /* Firefox */
       }
     }

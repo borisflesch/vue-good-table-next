@@ -1,21 +1,23 @@
+@use "variables";
+
 table.vgt-table{
   font-size: 16px;
   border-collapse: collapse;
-  background-color: $table-bg;
+  background-color: variables.$table-bg;
   width: 100%;
   max-width: 100%;
   table-layout: auto;
-  border: 1px solid $border-color;
+  border: 1px solid variables.$border-color;
   & td {
     padding: .75em .75em .75em .75em;
     vertical-align: top;
-    border-bottom:  1px solid $border-color;
-    color: $text-color;
+    border-bottom:  1px solid variables.$border-color;
+    color: variables.$text-color;
   }
   & tr.clickable {
     cursor: pointer;
     &:hover{
-      background-color: $highlight-color;
+      background-color: variables.$highlight-color;
     }
   }
 }

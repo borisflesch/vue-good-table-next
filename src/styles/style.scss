@@ -1,28 +1,28 @@
-@import './striped';
+@use 'striped';
 
 // base table styles
-@import './variables';
-@import './utils';
-@import './wrap';
-@import './table';
-@import './table-th';
-@import './input';
-@import './loading';
-@import './expand-rows';
+@use 'variables';
+@use 'utils';
+@use 'wrap';
+@use 'table';
+@use 'table-th';
+@use 'input';
+@use 'loading';
+@use 'expand-rows';
 
 // table enhancements
-@import './bordered';
-@import './rtl';
-@import './condensed';
-@import './compact';
+@use 'bordered';
+@use 'rtl';
+@use 'condensed';
+@use 'compact';
 
 // controls on top
-@import './control-bar';
+@use 'control-bar';
 
 // table footer
-@import './table-footer';
+@use 'table-footer';
 
 //themes
-@import './nocturnal/nocturnal';
-@import './black-rhino/black-rhino';
-@import './polar-bear/polar-bear';
+@use 'nocturnal/nocturnal';
+@use 'black-rhino/black-rhino';
+@use 'polar-bear/polar-bear';

@@ -33,12 +33,27 @@
         :info-fn="infoFn"
         :mode="mode" />
       <button
+        v-if="jumpFirstOrLast"
+        type="button"
+        aria-controls="vgt-table"
+        class="footer__navigation__page-btn"
+        :class="{ disabled: !firstIsPossible }"
+        @click.prevent.stop="firstPage"
+      >
+        <span
+          aria-hidden="true"
+          class="chevron start"
+        ></span>
+        <span>{{ firstText }}</span>
+      </button>
+
+      <button
         type="button"
         aria-controls="vgt-table"
         class="footer__navigation__page-btn"
         :class="{ disabled: !prevIsPossible }"
         @click.prevent.stop="previousPage">
-        <span aria-hidden="true" class="chevron" v-bind:class="{ 'left': !rtl, 'right': rtl }"></span>
+        <span aria-hidden="true" class="chevron start"></span>
         <span>{{prevText}}</span>
       </button>
 
@@ -49,7 +64,22 @@
         :class="{ disabled: !nextIsPossible }"
         @click.prevent.stop="nextPage">
         <span>{{nextText}}</span>
-        <span aria-hidden="true" class="chevron" v-bind:class="{ 'right': !rtl, 'left': rtl }"></span>
+        <span aria-hidden="true" class="chevron end"></span>
+      </button>
+
+      <button
+        v-if="jumpFirstOrLast"
+        type="button"
+        aria-controls="vgt-table"
+        class="footer__navigation__page-btn"
+        :class="{ disabled: !lastIsPossible }"
+        @click.prevent.stop="lastPage"
+      >
+        <span>{{ lastText }}</span>
+        <span
+          aria-hidden="true"
+          class="chevron end"
+        ></span>
       </button>
     </div>
   </div>
@@ -73,8 +103,11 @@ export default {
     customRowsPerPageDropdown: { default() { return []; } },
     paginateDropdownAllowAll: { default: true },
     mode: { default: PAGINATION_MODES.Records },
+    jumpFirstOrLast: { default: false },
 
     // text options
+    firstText: { default: "First" },
+    lastText: { default: "Last" },
     nextText: { default: 'Next' },
     prevText: { default: 'Prev' },
     rowsPerPageText: { default: 'Rows per page:' },
@@ -104,8 +137,8 @@ export default {
 
     customRowsPerPageDropdown: {
       handler() {
-        this.handlePerPage();
-      },
+      this.handlePerPage();
+    },
       deep: true,
     },
 
@@ -121,10 +154,24 @@ export default {
   computed: {
     // Number of pages
     pagesCount() {
+      // if the setting is set to 'all'
+      if(this.currentPerPage === -1) {
+        return 1;
+      }
       const quotient = Math.floor(this.total / this.currentPerPage);
       const remainder = this.total % this.currentPerPage;
 
       return remainder === 0 ? quotient : quotient + 1;
+    },
+
+    // Can go to first page
+    firstIsPossible() {
+      return this.currentPage > 1;
+    },
+
+    // Can go to last page
+    lastIsPossible() {
+      return this.currentPage < Math.ceil(this.total / this.currentPerPage);
     },
 
     // Can go to next page
@@ -148,6 +195,24 @@ export default {
         this.prevPage = this.currentPage;
         this.currentPage = pageNumber;
         this.pageChanged(emit);
+      }
+    },
+
+    // Go to first page
+    firstPage() {
+      if (this.firstIsPossible) {
+        this.currentPage = 1;
+        this.prevPage = 0;
+        this.pageChanged();
+      }
+    },
+
+    // Go to last page
+    lastPage() {
+      if (this.lastIsPossible) {
+        this.currentPage = this.pagesCount;
+        this.prev = this.currentPage - 1;
+        this.pageChanged();
       }
     },
 

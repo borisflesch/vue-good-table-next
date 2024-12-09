@@ -1,49 +1,52 @@
-@import './overrides';
+@use 'sass:color';
+@use 'overrides'; 
+@use "../variables";
+
 // suggested by wifey
 .vgt-table.black-rhino{
-  border: 1px solid $border-color;
-  background-color: $table-bg;
+  border: 1px solid variables.$border-color;
+  background-color: variables.$table-bg;
 
   & tr.clickable {
     &:hover{
-      background-color: $highlight-color;
+      background-color: variables.$highlight-color;
     }
   }
 
   // td
   & td {
-    border-bottom:  1px solid $border-color-td;
-    color: $text-color-td;
+    border-bottom:  1px solid overrides.$border-color-td;
+    color: overrides.$text-color-td;
   }
 
   //th
   & th.line-numbers, & th.vgt-checkbox-col {
-    color: $text-color;
-    border-right: 1px solid $border-color;
-    background: linear-gradient($thead-bg-color-1, $thead-bg-color-2);
+    color: variables.$text-color;
+    border-inline-end: 1px solid variables.$border-color;
+    background: linear-gradient(variables.$thead-bg-color-1, variables.$thead-bg-color-2);
   }
   thead th{
-    color: $text-color;
-    text-shadow: 1px 1px $text-shadow-color;
-    border-bottom:  1px solid $border-color;
-    background: linear-gradient($thead-bg-color-1, $thead-bg-color-2);
+    color: variables.$text-color;
+    text-shadow: 1px 1px overrides.$text-shadow-color;
+    border-bottom:  1px solid variables.$border-color;
+    background: linear-gradient(variables.$thead-bg-color-1, variables.$thead-bg-color-2);
     &.sortable {
-      // color: lighten($text-color, 15%);
+      // color: l_ighten($text-color, 15%);
       &:before{
-        border-top-color: $chevron-color;
+        border-top-color: variables.$chevron-color;
       }
       &:after{
-        border-bottom-color: $chevron-color;
+        border-bottom-color: variables.$chevron-color;
       }
       &.sorting-asc{
         color: white;
         &:after{
-          border-bottom-color: $link-color;
+          border-bottom-color: variables.$link-color;
         }
       }
       &.sorting-desc {
         &:before{
-          border-top-color: $link-color;
+          border-top-color: variables.$link-color;
         }
       }
     }
@@ -51,20 +54,20 @@
   
   //bordered
   &.bordered td {
-    border: 1px solid $border-color-td;
+    border: 1px solid overrides.$border-color-td;
   }
 
   &.bordered th {
-    border: 1px solid $border-color;
+    border: 1px solid variables.$border-color;
   }
 
   //input
   .vgt-input, .vgt-select{
-    color: $text-color;
-    background-color: $input-bg;
-    border: 1px solid $input-border-color;
+    color: variables.$text-color;
+    background-color: overrides.$input-bg;
+    border: 1px solid variables.$input-border-color;
     &::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-      color: $text-color;
+      color: variables.$text-color;
       opacity: 0.3; /* Firefox */
     }
   }
@@ -72,30 +75,30 @@
 
 .vgt-wrap.black-rhino{
   .vgt-wrap__footer{
-    color: $text-color;
-    border: 1px solid $border-color;
-    background: linear-gradient($thead-bg-color-1, $thead-bg-color-2);
+    color: variables.$text-color;
+    border: 1px solid variables.$border-color;
+    background: linear-gradient(variables.$thead-bg-color-1, variables.$thead-bg-color-2);
     .footer__row-count{
       position: relative;
-      padding-right: 3px;
+      padding-inline-end: 3px;
       &__label{
-        color: $secondary-text-color;
+        color: variables.$secondary-text-color;
       }
       &__select{
-        color:  $text-color-td;
-        background: $input-bg;
+        color:  overrides.$text-color-td;
+        background: overrides.$input-bg;
         border: none;
         -webkit-appearance: none; 
         -moz-appearance: none;
         appearance: none;
-        padding-right: 15px;
-        padding-left: 5px;
+        padding-inline-end: 15px;
+        padding-inline-start : 5px;
         border-radius: 3px;
         &::-ms-expand{
           display: none;
         }
         &:focus{
-          border-color: $link-color;
+          border-color: variables.$link-color;
         }
       }
       &::after{
@@ -104,55 +107,51 @@
         position: absolute;
         height: 0px;
         width: 0px;
-        right: 6px;
+        inset-inline-end: 6px;
         top: 50%;
         margin-top: -1px;
-        border-top:  6px solid $text-color-td;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
+        border-top:  6px solid overrides.$text-color-td;
+        border-inline : 6px solid transparent;
         border-bottom: none;
         pointer-events: none
       }
     }
     .footer__navigation{
       &__page-btn{
-        color: $text-color;
+        color: variables.$text-color;
         &.disabled,
         &.disabled:hover {
-          .chevron.left:after{
-            border-right-color: $text-color;
-          }
-          .chevron.right:after{
-            border-left-color: $text-color;
+          .chevron:after{
+            border-inline-end-color: variables.$text-color;
           }
         }
       }
       &__info, &__page-info{
-        color: $text-color;
+        color: variables.$text-color;
       }
     }
   }
 
   // control bar
   .vgt-global-search{
-    border:  1px solid $border-color;
-    background: linear-gradient($thead-bg-color-1, $thead-bg-color-2);
+    border:  1px solid variables.$border-color;
+    background: linear-gradient(variables.$thead-bg-color-1, variables.$thead-bg-color-2);
   }
   .vgt-global-search__input{
     .input__icon{
       .magnifying-glass{
-        border: 2px solid darken($border-color, 2%);
+        border: 2px solid color.adjust(variables.$border-color, $lightness: -2%);
         &:before{
-          background: darken($border-color, 2%);
+          background: color.adjust(variables.$border-color, $lightness: -2%);
         }
       }
     }
     .vgt-input, .vgt-select{
-      color: $text-color;
-      background-color: darken($thead-bg-color-2, 5%);
-      border: 1px solid $input-border-color;
+      color: variables.$text-color;
+      background-color: color.adjust(variables.$thead-bg-color-2, $lightness: -5%);
+      border: 1px solid variables.$input-border-color;
       &::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-        color: $text-color;
+        color: variables.$text-color;
         opacity: 0.3; /* Firefox */
       }
     }

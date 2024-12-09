@@ -25,6 +25,10 @@ const DEFAULT_ROWS_PER_PAGE_DROPDOWN = [10, 20, 30, 40, 50];
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
+function getDefaultExportFromCjs (x) {
+	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+}
+
 var lodash_isequal = {exports: {}};
 
 /**
@@ -35,1850 +39,1859 @@ var lodash_isequal = {exports: {}};
  * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
  * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
  */
-
-(function (module, exports) {
-/** Used as the size to enable large array optimizations. */
-var LARGE_ARRAY_SIZE = 200;
-
-/** Used to stand-in for `undefined` hash values. */
-var HASH_UNDEFINED = '__lodash_hash_undefined__';
-
-/** Used to compose bitmasks for value comparisons. */
-var COMPARE_PARTIAL_FLAG = 1,
-    COMPARE_UNORDERED_FLAG = 2;
-
-/** Used as references for various `Number` constants. */
-var MAX_SAFE_INTEGER = 9007199254740991;
-
-/** `Object#toString` result references. */
-var argsTag = '[object Arguments]',
-    arrayTag = '[object Array]',
-    asyncTag = '[object AsyncFunction]',
-    boolTag = '[object Boolean]',
-    dateTag = '[object Date]',
-    errorTag = '[object Error]',
-    funcTag = '[object Function]',
-    genTag = '[object GeneratorFunction]',
-    mapTag = '[object Map]',
-    numberTag = '[object Number]',
-    nullTag = '[object Null]',
-    objectTag = '[object Object]',
-    promiseTag = '[object Promise]',
-    proxyTag = '[object Proxy]',
-    regexpTag = '[object RegExp]',
-    setTag = '[object Set]',
-    stringTag = '[object String]',
-    symbolTag = '[object Symbol]',
-    undefinedTag = '[object Undefined]',
-    weakMapTag = '[object WeakMap]';
-
-var arrayBufferTag = '[object ArrayBuffer]',
-    dataViewTag = '[object DataView]',
-    float32Tag = '[object Float32Array]',
-    float64Tag = '[object Float64Array]',
-    int8Tag = '[object Int8Array]',
-    int16Tag = '[object Int16Array]',
-    int32Tag = '[object Int32Array]',
-    uint8Tag = '[object Uint8Array]',
-    uint8ClampedTag = '[object Uint8ClampedArray]',
-    uint16Tag = '[object Uint16Array]',
-    uint32Tag = '[object Uint32Array]';
-
-/**
- * Used to match `RegExp`
- * [syntax characters](http://ecma-international.org/ecma-262/7.0/#sec-patterns).
- */
-var reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
-
-/** Used to detect host constructors (Safari). */
-var reIsHostCtor = /^\[object .+?Constructor\]$/;
-
-/** Used to detect unsigned integer values. */
-var reIsUint = /^(?:0|[1-9]\d*)$/;
-
-/** Used to identify `toStringTag` values of typed arrays. */
-var typedArrayTags = {};
-typedArrayTags[float32Tag] = typedArrayTags[float64Tag] =
-typedArrayTags[int8Tag] = typedArrayTags[int16Tag] =
-typedArrayTags[int32Tag] = typedArrayTags[uint8Tag] =
-typedArrayTags[uint8ClampedTag] = typedArrayTags[uint16Tag] =
-typedArrayTags[uint32Tag] = true;
-typedArrayTags[argsTag] = typedArrayTags[arrayTag] =
-typedArrayTags[arrayBufferTag] = typedArrayTags[boolTag] =
-typedArrayTags[dataViewTag] = typedArrayTags[dateTag] =
-typedArrayTags[errorTag] = typedArrayTags[funcTag] =
-typedArrayTags[mapTag] = typedArrayTags[numberTag] =
-typedArrayTags[objectTag] = typedArrayTags[regexpTag] =
-typedArrayTags[setTag] = typedArrayTags[stringTag] =
-typedArrayTags[weakMapTag] = false;
-
-/** Detect free variable `global` from Node.js. */
-var freeGlobal = typeof commonjsGlobal == 'object' && commonjsGlobal && commonjsGlobal.Object === Object && commonjsGlobal;
-
-/** Detect free variable `self`. */
-var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
-
-/** Used as a reference to the global object. */
-var root = freeGlobal || freeSelf || Function('return this')();
-
-/** Detect free variable `exports`. */
-var freeExports = exports && !exports.nodeType && exports;
-
-/** Detect free variable `module`. */
-var freeModule = freeExports && 'object' == 'object' && module && !module.nodeType && module;
-
-/** Detect the popular CommonJS extension `module.exports`. */
-var moduleExports = freeModule && freeModule.exports === freeExports;
-
-/** Detect free variable `process` from Node.js. */
-var freeProcess = moduleExports && freeGlobal.process;
-
-/** Used to access faster Node.js helpers. */
-var nodeUtil = (function() {
-  try {
-    return freeProcess && freeProcess.binding && freeProcess.binding('util');
-  } catch (e) {}
-}());
-
-/* Node.js helper references. */
-var nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
-
-/**
- * A specialized version of `_.filter` for arrays without support for
- * iteratee shorthands.
- *
- * @private
- * @param {Array} [array] The array to iterate over.
- * @param {Function} predicate The function invoked per iteration.
- * @returns {Array} Returns the new filtered array.
- */
-function arrayFilter(array, predicate) {
-  var index = -1,
-      length = array == null ? 0 : array.length,
-      resIndex = 0,
-      result = [];
-
-  while (++index < length) {
-    var value = array[index];
-    if (predicate(value, index, array)) {
-      result[resIndex++] = value;
-    }
-  }
-  return result;
-}
-
-/**
- * Appends the elements of `values` to `array`.
- *
- * @private
- * @param {Array} array The array to modify.
- * @param {Array} values The values to append.
- * @returns {Array} Returns `array`.
- */
-function arrayPush(array, values) {
-  var index = -1,
-      length = values.length,
-      offset = array.length;
-
-  while (++index < length) {
-    array[offset + index] = values[index];
-  }
-  return array;
-}
-
-/**
- * A specialized version of `_.some` for arrays without support for iteratee
- * shorthands.
- *
- * @private
- * @param {Array} [array] The array to iterate over.
- * @param {Function} predicate The function invoked per iteration.
- * @returns {boolean} Returns `true` if any element passes the predicate check,
- *  else `false`.
- */
-function arraySome(array, predicate) {
-  var index = -1,
-      length = array == null ? 0 : array.length;
-
-  while (++index < length) {
-    if (predicate(array[index], index, array)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * The base implementation of `_.times` without support for iteratee shorthands
- * or max array length checks.
- *
- * @private
- * @param {number} n The number of times to invoke `iteratee`.
- * @param {Function} iteratee The function invoked per iteration.
- * @returns {Array} Returns the array of results.
- */
-function baseTimes(n, iteratee) {
-  var index = -1,
-      result = Array(n);
-
-  while (++index < n) {
-    result[index] = iteratee(index);
-  }
-  return result;
-}
-
-/**
- * The base implementation of `_.unary` without support for storing metadata.
- *
- * @private
- * @param {Function} func The function to cap arguments for.
- * @returns {Function} Returns the new capped function.
- */
-function baseUnary(func) {
-  return function(value) {
-    return func(value);
-  };
-}
-
-/**
- * Checks if a `cache` value for `key` exists.
- *
- * @private
- * @param {Object} cache The cache to query.
- * @param {string} key The key of the entry to check.
- * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
- */
-function cacheHas(cache, key) {
-  return cache.has(key);
-}
-
-/**
- * Gets the value at `key` of `object`.
- *
- * @private
- * @param {Object} [object] The object to query.
- * @param {string} key The key of the property to get.
- * @returns {*} Returns the property value.
- */
-function getValue(object, key) {
-  return object == null ? undefined : object[key];
-}
-
-/**
- * Converts `map` to its key-value pairs.
- *
- * @private
- * @param {Object} map The map to convert.
- * @returns {Array} Returns the key-value pairs.
- */
-function mapToArray(map) {
-  var index = -1,
-      result = Array(map.size);
-
-  map.forEach(function(value, key) {
-    result[++index] = [key, value];
-  });
-  return result;
-}
-
-/**
- * Creates a unary function that invokes `func` with its argument transformed.
- *
- * @private
- * @param {Function} func The function to wrap.
- * @param {Function} transform The argument transform.
- * @returns {Function} Returns the new function.
- */
-function overArg(func, transform) {
-  return function(arg) {
-    return func(transform(arg));
-  };
-}
-
-/**
- * Converts `set` to an array of its values.
- *
- * @private
- * @param {Object} set The set to convert.
- * @returns {Array} Returns the values.
- */
-function setToArray(set) {
-  var index = -1,
-      result = Array(set.size);
-
-  set.forEach(function(value) {
-    result[++index] = value;
-  });
-  return result;
-}
-
-/** Used for built-in method references. */
-var arrayProto = Array.prototype,
-    funcProto = Function.prototype,
-    objectProto = Object.prototype;
-
-/** Used to detect overreaching core-js shims. */
-var coreJsData = root['__core-js_shared__'];
-
-/** Used to resolve the decompiled source of functions. */
-var funcToString = funcProto.toString;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/** Used to detect methods masquerading as native. */
-var maskSrcKey = (function() {
-  var uid = /[^.]+$/.exec(coreJsData && coreJsData.keys && coreJsData.keys.IE_PROTO || '');
-  return uid ? ('Symbol(src)_1.' + uid) : '';
-}());
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var nativeObjectToString = objectProto.toString;
-
-/** Used to detect if a method is native. */
-var reIsNative = RegExp('^' +
-  funcToString.call(hasOwnProperty).replace(reRegExpChar, '\\$&')
-  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-);
-
-/** Built-in value references. */
-var Buffer = moduleExports ? root.Buffer : undefined,
-    Symbol = root.Symbol,
-    Uint8Array = root.Uint8Array,
-    propertyIsEnumerable = objectProto.propertyIsEnumerable,
-    splice = arrayProto.splice,
-    symToStringTag = Symbol ? Symbol.toStringTag : undefined;
-
-/* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeGetSymbols = Object.getOwnPropertySymbols,
-    nativeIsBuffer = Buffer ? Buffer.isBuffer : undefined,
-    nativeKeys = overArg(Object.keys, Object);
-
-/* Built-in method references that are verified to be native. */
-var DataView = getNative(root, 'DataView'),
-    Map = getNative(root, 'Map'),
-    Promise = getNative(root, 'Promise'),
-    Set = getNative(root, 'Set'),
-    WeakMap = getNative(root, 'WeakMap'),
-    nativeCreate = getNative(Object, 'create');
-
-/** Used to detect maps, sets, and weakmaps. */
-var dataViewCtorString = toSource(DataView),
-    mapCtorString = toSource(Map),
-    promiseCtorString = toSource(Promise),
-    setCtorString = toSource(Set),
-    weakMapCtorString = toSource(WeakMap);
-
-/** Used to convert symbols to primitives and strings. */
-var symbolProto = Symbol ? Symbol.prototype : undefined,
-    symbolValueOf = symbolProto ? symbolProto.valueOf : undefined;
-
-/**
- * Creates a hash object.
- *
- * @private
- * @constructor
- * @param {Array} [entries] The key-value pairs to cache.
- */
-function Hash(entries) {
-  var index = -1,
-      length = entries == null ? 0 : entries.length;
-
-  this.clear();
-  while (++index < length) {
-    var entry = entries[index];
-    this.set(entry[0], entry[1]);
-  }
-}
-
-/**
- * Removes all key-value entries from the hash.
- *
- * @private
- * @name clear
- * @memberOf Hash
- */
-function hashClear() {
-  this.__data__ = nativeCreate ? nativeCreate(null) : {};
-  this.size = 0;
-}
-
-/**
- * Removes `key` and its value from the hash.
- *
- * @private
- * @name delete
- * @memberOf Hash
- * @param {Object} hash The hash to modify.
- * @param {string} key The key of the value to remove.
- * @returns {boolean} Returns `true` if the entry was removed, else `false`.
- */
-function hashDelete(key) {
-  var result = this.has(key) && delete this.__data__[key];
-  this.size -= result ? 1 : 0;
-  return result;
-}
-
-/**
- * Gets the hash value for `key`.
- *
- * @private
- * @name get
- * @memberOf Hash
- * @param {string} key The key of the value to get.
- * @returns {*} Returns the entry value.
- */
-function hashGet(key) {
-  var data = this.__data__;
-  if (nativeCreate) {
-    var result = data[key];
-    return result === HASH_UNDEFINED ? undefined : result;
-  }
-  return hasOwnProperty.call(data, key) ? data[key] : undefined;
-}
-
-/**
- * Checks if a hash value for `key` exists.
- *
- * @private
- * @name has
- * @memberOf Hash
- * @param {string} key The key of the entry to check.
- * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
- */
-function hashHas(key) {
-  var data = this.__data__;
-  return nativeCreate ? (data[key] !== undefined) : hasOwnProperty.call(data, key);
-}
-
-/**
- * Sets the hash `key` to `value`.
- *
- * @private
- * @name set
- * @memberOf Hash
- * @param {string} key The key of the value to set.
- * @param {*} value The value to set.
- * @returns {Object} Returns the hash instance.
- */
-function hashSet(key, value) {
-  var data = this.__data__;
-  this.size += this.has(key) ? 0 : 1;
-  data[key] = (nativeCreate && value === undefined) ? HASH_UNDEFINED : value;
-  return this;
-}
-
-// Add methods to `Hash`.
-Hash.prototype.clear = hashClear;
-Hash.prototype['delete'] = hashDelete;
-Hash.prototype.get = hashGet;
-Hash.prototype.has = hashHas;
-Hash.prototype.set = hashSet;
-
-/**
- * Creates an list cache object.
- *
- * @private
- * @constructor
- * @param {Array} [entries] The key-value pairs to cache.
- */
-function ListCache(entries) {
-  var index = -1,
-      length = entries == null ? 0 : entries.length;
-
-  this.clear();
-  while (++index < length) {
-    var entry = entries[index];
-    this.set(entry[0], entry[1]);
-  }
-}
-
-/**
- * Removes all key-value entries from the list cache.
- *
- * @private
- * @name clear
- * @memberOf ListCache
- */
-function listCacheClear() {
-  this.__data__ = [];
-  this.size = 0;
-}
-
-/**
- * Removes `key` and its value from the list cache.
- *
- * @private
- * @name delete
- * @memberOf ListCache
- * @param {string} key The key of the value to remove.
- * @returns {boolean} Returns `true` if the entry was removed, else `false`.
- */
-function listCacheDelete(key) {
-  var data = this.__data__,
-      index = assocIndexOf(data, key);
-
-  if (index < 0) {
-    return false;
-  }
-  var lastIndex = data.length - 1;
-  if (index == lastIndex) {
-    data.pop();
-  } else {
-    splice.call(data, index, 1);
-  }
-  --this.size;
-  return true;
-}
-
-/**
- * Gets the list cache value for `key`.
- *
- * @private
- * @name get
- * @memberOf ListCache
- * @param {string} key The key of the value to get.
- * @returns {*} Returns the entry value.
- */
-function listCacheGet(key) {
-  var data = this.__data__,
-      index = assocIndexOf(data, key);
-
-  return index < 0 ? undefined : data[index][1];
-}
-
-/**
- * Checks if a list cache value for `key` exists.
- *
- * @private
- * @name has
- * @memberOf ListCache
- * @param {string} key The key of the entry to check.
- * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
- */
-function listCacheHas(key) {
-  return assocIndexOf(this.__data__, key) > -1;
-}
-
-/**
- * Sets the list cache `key` to `value`.
- *
- * @private
- * @name set
- * @memberOf ListCache
- * @param {string} key The key of the value to set.
- * @param {*} value The value to set.
- * @returns {Object} Returns the list cache instance.
- */
-function listCacheSet(key, value) {
-  var data = this.__data__,
-      index = assocIndexOf(data, key);
-
-  if (index < 0) {
-    ++this.size;
-    data.push([key, value]);
-  } else {
-    data[index][1] = value;
-  }
-  return this;
-}
-
-// Add methods to `ListCache`.
-ListCache.prototype.clear = listCacheClear;
-ListCache.prototype['delete'] = listCacheDelete;
-ListCache.prototype.get = listCacheGet;
-ListCache.prototype.has = listCacheHas;
-ListCache.prototype.set = listCacheSet;
-
-/**
- * Creates a map cache object to store key-value pairs.
- *
- * @private
- * @constructor
- * @param {Array} [entries] The key-value pairs to cache.
- */
-function MapCache(entries) {
-  var index = -1,
-      length = entries == null ? 0 : entries.length;
-
-  this.clear();
-  while (++index < length) {
-    var entry = entries[index];
-    this.set(entry[0], entry[1]);
-  }
-}
-
-/**
- * Removes all key-value entries from the map.
- *
- * @private
- * @name clear
- * @memberOf MapCache
- */
-function mapCacheClear() {
-  this.size = 0;
-  this.__data__ = {
-    'hash': new Hash,
-    'map': new (Map || ListCache),
-    'string': new Hash
-  };
-}
-
-/**
- * Removes `key` and its value from the map.
- *
- * @private
- * @name delete
- * @memberOf MapCache
- * @param {string} key The key of the value to remove.
- * @returns {boolean} Returns `true` if the entry was removed, else `false`.
- */
-function mapCacheDelete(key) {
-  var result = getMapData(this, key)['delete'](key);
-  this.size -= result ? 1 : 0;
-  return result;
-}
-
-/**
- * Gets the map value for `key`.
- *
- * @private
- * @name get
- * @memberOf MapCache
- * @param {string} key The key of the value to get.
- * @returns {*} Returns the entry value.
- */
-function mapCacheGet(key) {
-  return getMapData(this, key).get(key);
-}
-
-/**
- * Checks if a map value for `key` exists.
- *
- * @private
- * @name has
- * @memberOf MapCache
- * @param {string} key The key of the entry to check.
- * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
- */
-function mapCacheHas(key) {
-  return getMapData(this, key).has(key);
-}
-
-/**
- * Sets the map `key` to `value`.
- *
- * @private
- * @name set
- * @memberOf MapCache
- * @param {string} key The key of the value to set.
- * @param {*} value The value to set.
- * @returns {Object} Returns the map cache instance.
- */
-function mapCacheSet(key, value) {
-  var data = getMapData(this, key),
-      size = data.size;
-
-  data.set(key, value);
-  this.size += data.size == size ? 0 : 1;
-  return this;
-}
-
-// Add methods to `MapCache`.
-MapCache.prototype.clear = mapCacheClear;
-MapCache.prototype['delete'] = mapCacheDelete;
-MapCache.prototype.get = mapCacheGet;
-MapCache.prototype.has = mapCacheHas;
-MapCache.prototype.set = mapCacheSet;
-
-/**
- *
- * Creates an array cache object to store unique values.
- *
- * @private
- * @constructor
- * @param {Array} [values] The values to cache.
- */
-function SetCache(values) {
-  var index = -1,
-      length = values == null ? 0 : values.length;
-
-  this.__data__ = new MapCache;
-  while (++index < length) {
-    this.add(values[index]);
-  }
-}
-
-/**
- * Adds `value` to the array cache.
- *
- * @private
- * @name add
- * @memberOf SetCache
- * @alias push
- * @param {*} value The value to cache.
- * @returns {Object} Returns the cache instance.
- */
-function setCacheAdd(value) {
-  this.__data__.set(value, HASH_UNDEFINED);
-  return this;
-}
-
-/**
- * Checks if `value` is in the array cache.
- *
- * @private
- * @name has
- * @memberOf SetCache
- * @param {*} value The value to search for.
- * @returns {number} Returns `true` if `value` is found, else `false`.
- */
-function setCacheHas(value) {
-  return this.__data__.has(value);
-}
-
-// Add methods to `SetCache`.
-SetCache.prototype.add = SetCache.prototype.push = setCacheAdd;
-SetCache.prototype.has = setCacheHas;
-
-/**
- * Creates a stack cache object to store key-value pairs.
- *
- * @private
- * @constructor
- * @param {Array} [entries] The key-value pairs to cache.
- */
-function Stack(entries) {
-  var data = this.__data__ = new ListCache(entries);
-  this.size = data.size;
-}
-
-/**
- * Removes all key-value entries from the stack.
- *
- * @private
- * @name clear
- * @memberOf Stack
- */
-function stackClear() {
-  this.__data__ = new ListCache;
-  this.size = 0;
-}
-
-/**
- * Removes `key` and its value from the stack.
- *
- * @private
- * @name delete
- * @memberOf Stack
- * @param {string} key The key of the value to remove.
- * @returns {boolean} Returns `true` if the entry was removed, else `false`.
- */
-function stackDelete(key) {
-  var data = this.__data__,
-      result = data['delete'](key);
-
-  this.size = data.size;
-  return result;
-}
-
-/**
- * Gets the stack value for `key`.
- *
- * @private
- * @name get
- * @memberOf Stack
- * @param {string} key The key of the value to get.
- * @returns {*} Returns the entry value.
- */
-function stackGet(key) {
-  return this.__data__.get(key);
-}
-
-/**
- * Checks if a stack value for `key` exists.
- *
- * @private
- * @name has
- * @memberOf Stack
- * @param {string} key The key of the entry to check.
- * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
- */
-function stackHas(key) {
-  return this.__data__.has(key);
-}
-
-/**
- * Sets the stack `key` to `value`.
- *
- * @private
- * @name set
- * @memberOf Stack
- * @param {string} key The key of the value to set.
- * @param {*} value The value to set.
- * @returns {Object} Returns the stack cache instance.
- */
-function stackSet(key, value) {
-  var data = this.__data__;
-  if (data instanceof ListCache) {
-    var pairs = data.__data__;
-    if (!Map || (pairs.length < LARGE_ARRAY_SIZE - 1)) {
-      pairs.push([key, value]);
-      this.size = ++data.size;
-      return this;
-    }
-    data = this.__data__ = new MapCache(pairs);
-  }
-  data.set(key, value);
-  this.size = data.size;
-  return this;
-}
-
-// Add methods to `Stack`.
-Stack.prototype.clear = stackClear;
-Stack.prototype['delete'] = stackDelete;
-Stack.prototype.get = stackGet;
-Stack.prototype.has = stackHas;
-Stack.prototype.set = stackSet;
-
-/**
- * Creates an array of the enumerable property names of the array-like `value`.
- *
- * @private
- * @param {*} value The value to query.
- * @param {boolean} inherited Specify returning inherited property names.
- * @returns {Array} Returns the array of property names.
- */
-function arrayLikeKeys(value, inherited) {
-  var isArr = isArray(value),
-      isArg = !isArr && isArguments(value),
-      isBuff = !isArr && !isArg && isBuffer(value),
-      isType = !isArr && !isArg && !isBuff && isTypedArray(value),
-      skipIndexes = isArr || isArg || isBuff || isType,
-      result = skipIndexes ? baseTimes(value.length, String) : [],
-      length = result.length;
-
-  for (var key in value) {
-    if ((inherited || hasOwnProperty.call(value, key)) &&
-        !(skipIndexes && (
-           // Safari 9 has enumerable `arguments.length` in strict mode.
-           key == 'length' ||
-           // Node.js 0.10 has enumerable non-index properties on buffers.
-           (isBuff && (key == 'offset' || key == 'parent')) ||
-           // PhantomJS 2 has enumerable non-index properties on typed arrays.
-           (isType && (key == 'buffer' || key == 'byteLength' || key == 'byteOffset')) ||
-           // Skip index properties.
-           isIndex(key, length)
-        ))) {
-      result.push(key);
-    }
-  }
-  return result;
-}
-
-/**
- * Gets the index at which the `key` is found in `array` of key-value pairs.
- *
- * @private
- * @param {Array} array The array to inspect.
- * @param {*} key The key to search for.
- * @returns {number} Returns the index of the matched value, else `-1`.
- */
-function assocIndexOf(array, key) {
-  var length = array.length;
-  while (length--) {
-    if (eq(array[length][0], key)) {
-      return length;
-    }
-  }
-  return -1;
-}
-
-/**
- * The base implementation of `getAllKeys` and `getAllKeysIn` which uses
- * `keysFunc` and `symbolsFunc` to get the enumerable property names and
- * symbols of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @param {Function} keysFunc The function to get the keys of `object`.
- * @param {Function} symbolsFunc The function to get the symbols of `object`.
- * @returns {Array} Returns the array of property names and symbols.
- */
-function baseGetAllKeys(object, keysFunc, symbolsFunc) {
-  var result = keysFunc(object);
-  return isArray(object) ? result : arrayPush(result, symbolsFunc(object));
-}
-
-/**
- * The base implementation of `getTag` without fallbacks for buggy environments.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the `toStringTag`.
- */
-function baseGetTag(value) {
-  if (value == null) {
-    return value === undefined ? undefinedTag : nullTag;
-  }
-  return (symToStringTag && symToStringTag in Object(value))
-    ? getRawTag(value)
-    : objectToString(value);
-}
-
-/**
- * The base implementation of `_.isArguments`.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an `arguments` object,
- */
-function baseIsArguments(value) {
-  return isObjectLike(value) && baseGetTag(value) == argsTag;
-}
-
-/**
- * The base implementation of `_.isEqual` which supports partial comparisons
- * and tracks traversed objects.
- *
- * @private
- * @param {*} value The value to compare.
- * @param {*} other The other value to compare.
- * @param {boolean} bitmask The bitmask flags.
- *  1 - Unordered comparison
- *  2 - Partial comparison
- * @param {Function} [customizer] The function to customize comparisons.
- * @param {Object} [stack] Tracks traversed `value` and `other` objects.
- * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
- */
-function baseIsEqual(value, other, bitmask, customizer, stack) {
-  if (value === other) {
-    return true;
-  }
-  if (value == null || other == null || (!isObjectLike(value) && !isObjectLike(other))) {
-    return value !== value && other !== other;
-  }
-  return baseIsEqualDeep(value, other, bitmask, customizer, baseIsEqual, stack);
-}
-
-/**
- * A specialized version of `baseIsEqual` for arrays and objects which performs
- * deep comparisons and tracks traversed objects enabling objects with circular
- * references to be compared.
- *
- * @private
- * @param {Object} object The object to compare.
- * @param {Object} other The other object to compare.
- * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
- * @param {Function} customizer The function to customize comparisons.
- * @param {Function} equalFunc The function to determine equivalents of values.
- * @param {Object} [stack] Tracks traversed `object` and `other` objects.
- * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
- */
-function baseIsEqualDeep(object, other, bitmask, customizer, equalFunc, stack) {
-  var objIsArr = isArray(object),
-      othIsArr = isArray(other),
-      objTag = objIsArr ? arrayTag : getTag(object),
-      othTag = othIsArr ? arrayTag : getTag(other);
-
-  objTag = objTag == argsTag ? objectTag : objTag;
-  othTag = othTag == argsTag ? objectTag : othTag;
-
-  var objIsObj = objTag == objectTag,
-      othIsObj = othTag == objectTag,
-      isSameTag = objTag == othTag;
-
-  if (isSameTag && isBuffer(object)) {
-    if (!isBuffer(other)) {
-      return false;
-    }
-    objIsArr = true;
-    objIsObj = false;
-  }
-  if (isSameTag && !objIsObj) {
-    stack || (stack = new Stack);
-    return (objIsArr || isTypedArray(object))
-      ? equalArrays(object, other, bitmask, customizer, equalFunc, stack)
-      : equalByTag(object, other, objTag, bitmask, customizer, equalFunc, stack);
-  }
-  if (!(bitmask & COMPARE_PARTIAL_FLAG)) {
-    var objIsWrapped = objIsObj && hasOwnProperty.call(object, '__wrapped__'),
-        othIsWrapped = othIsObj && hasOwnProperty.call(other, '__wrapped__');
-
-    if (objIsWrapped || othIsWrapped) {
-      var objUnwrapped = objIsWrapped ? object.value() : object,
-          othUnwrapped = othIsWrapped ? other.value() : other;
-
-      stack || (stack = new Stack);
-      return equalFunc(objUnwrapped, othUnwrapped, bitmask, customizer, stack);
-    }
-  }
-  if (!isSameTag) {
-    return false;
-  }
-  stack || (stack = new Stack);
-  return equalObjects(object, other, bitmask, customizer, equalFunc, stack);
-}
-
-/**
- * The base implementation of `_.isNative` without bad shim checks.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a native function,
- *  else `false`.
- */
-function baseIsNative(value) {
-  if (!isObject(value) || isMasked(value)) {
-    return false;
-  }
-  var pattern = isFunction(value) ? reIsNative : reIsHostCtor;
-  return pattern.test(toSource(value));
-}
-
-/**
- * The base implementation of `_.isTypedArray` without Node.js optimizations.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
- */
-function baseIsTypedArray(value) {
-  return isObjectLike(value) &&
-    isLength(value.length) && !!typedArrayTags[baseGetTag(value)];
-}
-
-/**
- * The base implementation of `_.keys` which doesn't treat sparse arrays as dense.
- *
- * @private
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
- */
-function baseKeys(object) {
-  if (!isPrototype(object)) {
-    return nativeKeys(object);
-  }
-  var result = [];
-  for (var key in Object(object)) {
-    if (hasOwnProperty.call(object, key) && key != 'constructor') {
-      result.push(key);
-    }
-  }
-  return result;
-}
-
-/**
- * A specialized version of `baseIsEqualDeep` for arrays with support for
- * partial deep comparisons.
- *
- * @private
- * @param {Array} array The array to compare.
- * @param {Array} other The other array to compare.
- * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
- * @param {Function} customizer The function to customize comparisons.
- * @param {Function} equalFunc The function to determine equivalents of values.
- * @param {Object} stack Tracks traversed `array` and `other` objects.
- * @returns {boolean} Returns `true` if the arrays are equivalent, else `false`.
- */
-function equalArrays(array, other, bitmask, customizer, equalFunc, stack) {
-  var isPartial = bitmask & COMPARE_PARTIAL_FLAG,
-      arrLength = array.length,
-      othLength = other.length;
-
-  if (arrLength != othLength && !(isPartial && othLength > arrLength)) {
-    return false;
-  }
-  // Assume cyclic values are equal.
-  var stacked = stack.get(array);
-  if (stacked && stack.get(other)) {
-    return stacked == other;
-  }
-  var index = -1,
-      result = true,
-      seen = (bitmask & COMPARE_UNORDERED_FLAG) ? new SetCache : undefined;
-
-  stack.set(array, other);
-  stack.set(other, array);
-
-  // Ignore non-index properties.
-  while (++index < arrLength) {
-    var arrValue = array[index],
-        othValue = other[index];
-
-    if (customizer) {
-      var compared = isPartial
-        ? customizer(othValue, arrValue, index, other, array, stack)
-        : customizer(arrValue, othValue, index, array, other, stack);
-    }
-    if (compared !== undefined) {
-      if (compared) {
-        continue;
-      }
-      result = false;
-      break;
-    }
-    // Recursively compare arrays (susceptible to call stack limits).
-    if (seen) {
-      if (!arraySome(other, function(othValue, othIndex) {
-            if (!cacheHas(seen, othIndex) &&
-                (arrValue === othValue || equalFunc(arrValue, othValue, bitmask, customizer, stack))) {
-              return seen.push(othIndex);
-            }
-          })) {
-        result = false;
-        break;
-      }
-    } else if (!(
-          arrValue === othValue ||
-            equalFunc(arrValue, othValue, bitmask, customizer, stack)
-        )) {
-      result = false;
-      break;
-    }
-  }
-  stack['delete'](array);
-  stack['delete'](other);
-  return result;
-}
-
-/**
- * A specialized version of `baseIsEqualDeep` for comparing objects of
- * the same `toStringTag`.
- *
- * **Note:** This function only supports comparing values with tags of
- * `Boolean`, `Date`, `Error`, `Number`, `RegExp`, or `String`.
- *
- * @private
- * @param {Object} object The object to compare.
- * @param {Object} other The other object to compare.
- * @param {string} tag The `toStringTag` of the objects to compare.
- * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
- * @param {Function} customizer The function to customize comparisons.
- * @param {Function} equalFunc The function to determine equivalents of values.
- * @param {Object} stack Tracks traversed `object` and `other` objects.
- * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
- */
-function equalByTag(object, other, tag, bitmask, customizer, equalFunc, stack) {
-  switch (tag) {
-    case dataViewTag:
-      if ((object.byteLength != other.byteLength) ||
-          (object.byteOffset != other.byteOffset)) {
-        return false;
-      }
-      object = object.buffer;
-      other = other.buffer;
-
-    case arrayBufferTag:
-      if ((object.byteLength != other.byteLength) ||
-          !equalFunc(new Uint8Array(object), new Uint8Array(other))) {
-        return false;
-      }
-      return true;
-
-    case boolTag:
-    case dateTag:
-    case numberTag:
-      // Coerce booleans to `1` or `0` and dates to milliseconds.
-      // Invalid dates are coerced to `NaN`.
-      return eq(+object, +other);
-
-    case errorTag:
-      return object.name == other.name && object.message == other.message;
-
-    case regexpTag:
-    case stringTag:
-      // Coerce regexes to strings and treat strings, primitives and objects,
-      // as equal. See http://www.ecma-international.org/ecma-262/7.0/#sec-regexp.prototype.tostring
-      // for more details.
-      return object == (other + '');
-
-    case mapTag:
-      var convert = mapToArray;
-
-    case setTag:
-      var isPartial = bitmask & COMPARE_PARTIAL_FLAG;
-      convert || (convert = setToArray);
-
-      if (object.size != other.size && !isPartial) {
-        return false;
-      }
-      // Assume cyclic values are equal.
-      var stacked = stack.get(object);
-      if (stacked) {
-        return stacked == other;
-      }
-      bitmask |= COMPARE_UNORDERED_FLAG;
-
-      // Recursively compare objects (susceptible to call stack limits).
-      stack.set(object, other);
-      var result = equalArrays(convert(object), convert(other), bitmask, customizer, equalFunc, stack);
-      stack['delete'](object);
-      return result;
-
-    case symbolTag:
-      if (symbolValueOf) {
-        return symbolValueOf.call(object) == symbolValueOf.call(other);
-      }
-  }
-  return false;
-}
-
-/**
- * A specialized version of `baseIsEqualDeep` for objects with support for
- * partial deep comparisons.
- *
- * @private
- * @param {Object} object The object to compare.
- * @param {Object} other The other object to compare.
- * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
- * @param {Function} customizer The function to customize comparisons.
- * @param {Function} equalFunc The function to determine equivalents of values.
- * @param {Object} stack Tracks traversed `object` and `other` objects.
- * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
- */
-function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
-  var isPartial = bitmask & COMPARE_PARTIAL_FLAG,
-      objProps = getAllKeys(object),
-      objLength = objProps.length,
-      othProps = getAllKeys(other),
-      othLength = othProps.length;
-
-  if (objLength != othLength && !isPartial) {
-    return false;
-  }
-  var index = objLength;
-  while (index--) {
-    var key = objProps[index];
-    if (!(isPartial ? key in other : hasOwnProperty.call(other, key))) {
-      return false;
-    }
-  }
-  // Assume cyclic values are equal.
-  var stacked = stack.get(object);
-  if (stacked && stack.get(other)) {
-    return stacked == other;
-  }
-  var result = true;
-  stack.set(object, other);
-  stack.set(other, object);
-
-  var skipCtor = isPartial;
-  while (++index < objLength) {
-    key = objProps[index];
-    var objValue = object[key],
-        othValue = other[key];
-
-    if (customizer) {
-      var compared = isPartial
-        ? customizer(othValue, objValue, key, other, object, stack)
-        : customizer(objValue, othValue, key, object, other, stack);
-    }
-    // Recursively compare objects (susceptible to call stack limits).
-    if (!(compared === undefined
-          ? (objValue === othValue || equalFunc(objValue, othValue, bitmask, customizer, stack))
-          : compared
-        )) {
-      result = false;
-      break;
-    }
-    skipCtor || (skipCtor = key == 'constructor');
-  }
-  if (result && !skipCtor) {
-    var objCtor = object.constructor,
-        othCtor = other.constructor;
-
-    // Non `Object` object instances with different constructors are not equal.
-    if (objCtor != othCtor &&
-        ('constructor' in object && 'constructor' in other) &&
-        !(typeof objCtor == 'function' && objCtor instanceof objCtor &&
-          typeof othCtor == 'function' && othCtor instanceof othCtor)) {
-      result = false;
-    }
-  }
-  stack['delete'](object);
-  stack['delete'](other);
-  return result;
-}
-
-/**
- * Creates an array of own enumerable property names and symbols of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names and symbols.
- */
-function getAllKeys(object) {
-  return baseGetAllKeys(object, keys, getSymbols);
-}
-
-/**
- * Gets the data for `map`.
- *
- * @private
- * @param {Object} map The map to query.
- * @param {string} key The reference key.
- * @returns {*} Returns the map data.
- */
-function getMapData(map, key) {
-  var data = map.__data__;
-  return isKeyable(key)
-    ? data[typeof key == 'string' ? 'string' : 'hash']
-    : data.map;
-}
-
-/**
- * Gets the native function at `key` of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @param {string} key The key of the method to get.
- * @returns {*} Returns the function if it's native, else `undefined`.
- */
-function getNative(object, key) {
-  var value = getValue(object, key);
-  return baseIsNative(value) ? value : undefined;
-}
-
-/**
- * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the raw `toStringTag`.
- */
-function getRawTag(value) {
-  var isOwn = hasOwnProperty.call(value, symToStringTag),
-      tag = value[symToStringTag];
-
-  try {
-    value[symToStringTag] = undefined;
-    var unmasked = true;
-  } catch (e) {}
-
-  var result = nativeObjectToString.call(value);
-  if (unmasked) {
-    if (isOwn) {
-      value[symToStringTag] = tag;
-    } else {
-      delete value[symToStringTag];
-    }
-  }
-  return result;
-}
-
-/**
- * Creates an array of the own enumerable symbols of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of symbols.
- */
-var getSymbols = !nativeGetSymbols ? stubArray : function(object) {
-  if (object == null) {
-    return [];
-  }
-  object = Object(object);
-  return arrayFilter(nativeGetSymbols(object), function(symbol) {
-    return propertyIsEnumerable.call(object, symbol);
-  });
-};
-
-/**
- * Gets the `toStringTag` of `value`.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the `toStringTag`.
- */
-var getTag = baseGetTag;
-
-// Fallback for data views, maps, sets, and weak maps in IE 11 and promises in Node.js < 6.
-if ((DataView && getTag(new DataView(new ArrayBuffer(1))) != dataViewTag) ||
-    (Map && getTag(new Map) != mapTag) ||
-    (Promise && getTag(Promise.resolve()) != promiseTag) ||
-    (Set && getTag(new Set) != setTag) ||
-    (WeakMap && getTag(new WeakMap) != weakMapTag)) {
-  getTag = function(value) {
-    var result = baseGetTag(value),
-        Ctor = result == objectTag ? value.constructor : undefined,
-        ctorString = Ctor ? toSource(Ctor) : '';
-
-    if (ctorString) {
-      switch (ctorString) {
-        case dataViewCtorString: return dataViewTag;
-        case mapCtorString: return mapTag;
-        case promiseCtorString: return promiseTag;
-        case setCtorString: return setTag;
-        case weakMapCtorString: return weakMapTag;
-      }
-    }
-    return result;
-  };
-}
-
-/**
- * Checks if `value` is a valid array-like index.
- *
- * @private
- * @param {*} value The value to check.
- * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
- * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
- */
-function isIndex(value, length) {
-  length = length == null ? MAX_SAFE_INTEGER : length;
-  return !!length &&
-    (typeof value == 'number' || reIsUint.test(value)) &&
-    (value > -1 && value % 1 == 0 && value < length);
-}
-
-/**
- * Checks if `value` is suitable for use as unique object key.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is suitable, else `false`.
- */
-function isKeyable(value) {
-  var type = typeof value;
-  return (type == 'string' || type == 'number' || type == 'symbol' || type == 'boolean')
-    ? (value !== '__proto__')
-    : (value === null);
-}
-
-/**
- * Checks if `func` has its source masked.
- *
- * @private
- * @param {Function} func The function to check.
- * @returns {boolean} Returns `true` if `func` is masked, else `false`.
- */
-function isMasked(func) {
-  return !!maskSrcKey && (maskSrcKey in func);
-}
-
-/**
- * Checks if `value` is likely a prototype object.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a prototype, else `false`.
- */
-function isPrototype(value) {
-  var Ctor = value && value.constructor,
-      proto = (typeof Ctor == 'function' && Ctor.prototype) || objectProto;
-
-  return value === proto;
-}
-
-/**
- * Converts `value` to a string using `Object.prototype.toString`.
- *
- * @private
- * @param {*} value The value to convert.
- * @returns {string} Returns the converted string.
- */
-function objectToString(value) {
-  return nativeObjectToString.call(value);
-}
-
-/**
- * Converts `func` to its source code.
- *
- * @private
- * @param {Function} func The function to convert.
- * @returns {string} Returns the source code.
- */
-function toSource(func) {
-  if (func != null) {
-    try {
-      return funcToString.call(func);
-    } catch (e) {}
-    try {
-      return (func + '');
-    } catch (e) {}
-  }
-  return '';
-}
-
-/**
- * Performs a
- * [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
- * comparison between two values to determine if they are equivalent.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to compare.
- * @param {*} other The other value to compare.
- * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
- * @example
- *
- * var object = { 'a': 1 };
- * var other = { 'a': 1 };
- *
- * _.eq(object, object);
- * // => true
- *
- * _.eq(object, other);
- * // => false
- *
- * _.eq('a', 'a');
- * // => true
- *
- * _.eq('a', Object('a'));
- * // => false
- *
- * _.eq(NaN, NaN);
- * // => true
- */
-function eq(value, other) {
-  return value === other || (value !== value && other !== other);
-}
-
-/**
- * Checks if `value` is likely an `arguments` object.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an `arguments` object,
- *  else `false`.
- * @example
- *
- * _.isArguments(function() { return arguments; }());
- * // => true
- *
- * _.isArguments([1, 2, 3]);
- * // => false
- */
-var isArguments = baseIsArguments(function() { return arguments; }()) ? baseIsArguments : function(value) {
-  return isObjectLike(value) && hasOwnProperty.call(value, 'callee') &&
-    !propertyIsEnumerable.call(value, 'callee');
-};
-
-/**
- * Checks if `value` is classified as an `Array` object.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an array, else `false`.
- * @example
- *
- * _.isArray([1, 2, 3]);
- * // => true
- *
- * _.isArray(document.body.children);
- * // => false
- *
- * _.isArray('abc');
- * // => false
- *
- * _.isArray(_.noop);
- * // => false
- */
-var isArray = Array.isArray;
-
-/**
- * Checks if `value` is array-like. A value is considered array-like if it's
- * not a function and has a `value.length` that's an integer greater than or
- * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
- * @example
- *
- * _.isArrayLike([1, 2, 3]);
- * // => true
- *
- * _.isArrayLike(document.body.children);
- * // => true
- *
- * _.isArrayLike('abc');
- * // => true
- *
- * _.isArrayLike(_.noop);
- * // => false
- */
-function isArrayLike(value) {
-  return value != null && isLength(value.length) && !isFunction(value);
-}
-
-/**
- * Checks if `value` is a buffer.
- *
- * @static
- * @memberOf _
- * @since 4.3.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a buffer, else `false`.
- * @example
- *
- * _.isBuffer(new Buffer(2));
- * // => true
- *
- * _.isBuffer(new Uint8Array(2));
- * // => false
- */
-var isBuffer = nativeIsBuffer || stubFalse;
-
-/**
- * Performs a deep comparison between two values to determine if they are
- * equivalent.
- *
- * **Note:** This method supports comparing arrays, array buffers, booleans,
- * date objects, error objects, maps, numbers, `Object` objects, regexes,
- * sets, strings, symbols, and typed arrays. `Object` objects are compared
- * by their own, not inherited, enumerable properties. Functions and DOM
- * nodes are compared by strict equality, i.e. `===`.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to compare.
- * @param {*} other The other value to compare.
- * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
- * @example
- *
- * var object = { 'a': 1 };
- * var other = { 'a': 1 };
- *
- * _.isEqual(object, other);
- * // => true
- *
- * object === other;
- * // => false
- */
-function isEqual(value, other) {
-  return baseIsEqual(value, other);
-}
-
-/**
- * Checks if `value` is classified as a `Function` object.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a function, else `false`.
- * @example
- *
- * _.isFunction(_);
- * // => true
- *
- * _.isFunction(/abc/);
- * // => false
- */
-function isFunction(value) {
-  if (!isObject(value)) {
-    return false;
-  }
-  // The use of `Object#toString` avoids issues with the `typeof` operator
-  // in Safari 9 which returns 'object' for typed arrays and other constructors.
-  var tag = baseGetTag(value);
-  return tag == funcTag || tag == genTag || tag == asyncTag || tag == proxyTag;
-}
-
-/**
- * Checks if `value` is a valid array-like length.
- *
- * **Note:** This method is loosely based on
- * [`ToLength`](http://ecma-international.org/ecma-262/7.0/#sec-tolength).
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
- * @example
- *
- * _.isLength(3);
- * // => true
- *
- * _.isLength(Number.MIN_VALUE);
- * // => false
- *
- * _.isLength(Infinity);
- * // => false
- *
- * _.isLength('3');
- * // => false
- */
-function isLength(value) {
-  return typeof value == 'number' &&
-    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-}
-
-/**
- * Checks if `value` is the
- * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
- * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an object, else `false`.
- * @example
- *
- * _.isObject({});
- * // => true
- *
- * _.isObject([1, 2, 3]);
- * // => true
- *
- * _.isObject(_.noop);
- * // => true
- *
- * _.isObject(null);
- * // => false
- */
-function isObject(value) {
-  var type = typeof value;
-  return value != null && (type == 'object' || type == 'function');
-}
-
-/**
- * Checks if `value` is object-like. A value is object-like if it's not `null`
- * and has a `typeof` result of "object".
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
- * @example
- *
- * _.isObjectLike({});
- * // => true
- *
- * _.isObjectLike([1, 2, 3]);
- * // => true
- *
- * _.isObjectLike(_.noop);
- * // => false
- *
- * _.isObjectLike(null);
- * // => false
- */
-function isObjectLike(value) {
-  return value != null && typeof value == 'object';
-}
-
-/**
- * Checks if `value` is classified as a typed array.
- *
- * @static
- * @memberOf _
- * @since 3.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
- * @example
- *
- * _.isTypedArray(new Uint8Array);
- * // => true
- *
- * _.isTypedArray([]);
- * // => false
- */
-var isTypedArray = nodeIsTypedArray ? baseUnary(nodeIsTypedArray) : baseIsTypedArray;
-
-/**
- * Creates an array of the own enumerable property names of `object`.
- *
- * **Note:** Non-object values are coerced to objects. See the
- * [ES spec](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
- * for more details.
- *
- * @static
- * @since 0.1.0
- * @memberOf _
- * @category Object
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
- * @example
- *
- * function Foo() {
- *   this.a = 1;
- *   this.b = 2;
- * }
- *
- * Foo.prototype.c = 3;
- *
- * _.keys(new Foo);
- * // => ['a', 'b'] (iteration order is not guaranteed)
- *
- * _.keys('hi');
- * // => ['0', '1']
- */
-function keys(object) {
-  return isArrayLike(object) ? arrayLikeKeys(object) : baseKeys(object);
-}
-
-/**
- * This method returns a new empty array.
- *
- * @static
- * @memberOf _
- * @since 4.13.0
- * @category Util
- * @returns {Array} Returns the new empty array.
- * @example
- *
- * var arrays = _.times(2, _.stubArray);
- *
- * console.log(arrays);
- * // => [[], []]
- *
- * console.log(arrays[0] === arrays[1]);
- * // => false
- */
-function stubArray() {
-  return [];
-}
-
-/**
- * This method returns `false`.
- *
- * @static
- * @memberOf _
- * @since 4.13.0
- * @category Util
- * @returns {boolean} Returns `false`.
- * @example
- *
- * _.times(2, _.stubFalse);
- * // => [false, false]
- */
-function stubFalse() {
-  return false;
-}
-
-module.exports = isEqual;
-}(lodash_isequal, lodash_isequal.exports));
-
-var isEqual = lodash_isequal.exports;
+lodash_isequal.exports;
+
+var hasRequiredLodash_isequal;
+
+function requireLodash_isequal () {
+	if (hasRequiredLodash_isequal) return lodash_isequal.exports;
+	hasRequiredLodash_isequal = 1;
+	(function (module, exports) {
+		/** Used as the size to enable large array optimizations. */
+		var LARGE_ARRAY_SIZE = 200;
+
+		/** Used to stand-in for `undefined` hash values. */
+		var HASH_UNDEFINED = '__lodash_hash_undefined__';
+
+		/** Used to compose bitmasks for value comparisons. */
+		var COMPARE_PARTIAL_FLAG = 1,
+		    COMPARE_UNORDERED_FLAG = 2;
+
+		/** Used as references for various `Number` constants. */
+		var MAX_SAFE_INTEGER = 9007199254740991;
+
+		/** `Object#toString` result references. */
+		var argsTag = '[object Arguments]',
+		    arrayTag = '[object Array]',
+		    asyncTag = '[object AsyncFunction]',
+		    boolTag = '[object Boolean]',
+		    dateTag = '[object Date]',
+		    errorTag = '[object Error]',
+		    funcTag = '[object Function]',
+		    genTag = '[object GeneratorFunction]',
+		    mapTag = '[object Map]',
+		    numberTag = '[object Number]',
+		    nullTag = '[object Null]',
+		    objectTag = '[object Object]',
+		    promiseTag = '[object Promise]',
+		    proxyTag = '[object Proxy]',
+		    regexpTag = '[object RegExp]',
+		    setTag = '[object Set]',
+		    stringTag = '[object String]',
+		    symbolTag = '[object Symbol]',
+		    undefinedTag = '[object Undefined]',
+		    weakMapTag = '[object WeakMap]';
+
+		var arrayBufferTag = '[object ArrayBuffer]',
+		    dataViewTag = '[object DataView]',
+		    float32Tag = '[object Float32Array]',
+		    float64Tag = '[object Float64Array]',
+		    int8Tag = '[object Int8Array]',
+		    int16Tag = '[object Int16Array]',
+		    int32Tag = '[object Int32Array]',
+		    uint8Tag = '[object Uint8Array]',
+		    uint8ClampedTag = '[object Uint8ClampedArray]',
+		    uint16Tag = '[object Uint16Array]',
+		    uint32Tag = '[object Uint32Array]';
+
+		/**
+		 * Used to match `RegExp`
+		 * [syntax characters](http://ecma-international.org/ecma-262/7.0/#sec-patterns).
+		 */
+		var reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
+
+		/** Used to detect host constructors (Safari). */
+		var reIsHostCtor = /^\[object .+?Constructor\]$/;
+
+		/** Used to detect unsigned integer values. */
+		var reIsUint = /^(?:0|[1-9]\d*)$/;
+
+		/** Used to identify `toStringTag` values of typed arrays. */
+		var typedArrayTags = {};
+		typedArrayTags[float32Tag] = typedArrayTags[float64Tag] =
+		typedArrayTags[int8Tag] = typedArrayTags[int16Tag] =
+		typedArrayTags[int32Tag] = typedArrayTags[uint8Tag] =
+		typedArrayTags[uint8ClampedTag] = typedArrayTags[uint16Tag] =
+		typedArrayTags[uint32Tag] = true;
+		typedArrayTags[argsTag] = typedArrayTags[arrayTag] =
+		typedArrayTags[arrayBufferTag] = typedArrayTags[boolTag] =
+		typedArrayTags[dataViewTag] = typedArrayTags[dateTag] =
+		typedArrayTags[errorTag] = typedArrayTags[funcTag] =
+		typedArrayTags[mapTag] = typedArrayTags[numberTag] =
+		typedArrayTags[objectTag] = typedArrayTags[regexpTag] =
+		typedArrayTags[setTag] = typedArrayTags[stringTag] =
+		typedArrayTags[weakMapTag] = false;
+
+		/** Detect free variable `global` from Node.js. */
+		var freeGlobal = typeof commonjsGlobal == 'object' && commonjsGlobal && commonjsGlobal.Object === Object && commonjsGlobal;
+
+		/** Detect free variable `self`. */
+		var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+
+		/** Used as a reference to the global object. */
+		var root = freeGlobal || freeSelf || Function('return this')();
+
+		/** Detect free variable `exports`. */
+		var freeExports = exports && !exports.nodeType && exports;
+
+		/** Detect free variable `module`. */
+		var freeModule = freeExports && 'object' == 'object' && module && !module.nodeType && module;
+
+		/** Detect the popular CommonJS extension `module.exports`. */
+		var moduleExports = freeModule && freeModule.exports === freeExports;
+
+		/** Detect free variable `process` from Node.js. */
+		var freeProcess = moduleExports && freeGlobal.process;
+
+		/** Used to access faster Node.js helpers. */
+		var nodeUtil = (function() {
+		  try {
+		    return freeProcess && freeProcess.binding && freeProcess.binding('util');
+		  } catch (e) {}
+		}());
+
+		/* Node.js helper references. */
+		var nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
+
+		/**
+		 * A specialized version of `_.filter` for arrays without support for
+		 * iteratee shorthands.
+		 *
+		 * @private
+		 * @param {Array} [array] The array to iterate over.
+		 * @param {Function} predicate The function invoked per iteration.
+		 * @returns {Array} Returns the new filtered array.
+		 */
+		function arrayFilter(array, predicate) {
+		  var index = -1,
+		      length = array == null ? 0 : array.length,
+		      resIndex = 0,
+		      result = [];
+
+		  while (++index < length) {
+		    var value = array[index];
+		    if (predicate(value, index, array)) {
+		      result[resIndex++] = value;
+		    }
+		  }
+		  return result;
+		}
+
+		/**
+		 * Appends the elements of `values` to `array`.
+		 *
+		 * @private
+		 * @param {Array} array The array to modify.
+		 * @param {Array} values The values to append.
+		 * @returns {Array} Returns `array`.
+		 */
+		function arrayPush(array, values) {
+		  var index = -1,
+		      length = values.length,
+		      offset = array.length;
+
+		  while (++index < length) {
+		    array[offset + index] = values[index];
+		  }
+		  return array;
+		}
+
+		/**
+		 * A specialized version of `_.some` for arrays without support for iteratee
+		 * shorthands.
+		 *
+		 * @private
+		 * @param {Array} [array] The array to iterate over.
+		 * @param {Function} predicate The function invoked per iteration.
+		 * @returns {boolean} Returns `true` if any element passes the predicate check,
+		 *  else `false`.
+		 */
+		function arraySome(array, predicate) {
+		  var index = -1,
+		      length = array == null ? 0 : array.length;
+
+		  while (++index < length) {
+		    if (predicate(array[index], index, array)) {
+		      return true;
+		    }
+		  }
+		  return false;
+		}
+
+		/**
+		 * The base implementation of `_.times` without support for iteratee shorthands
+		 * or max array length checks.
+		 *
+		 * @private
+		 * @param {number} n The number of times to invoke `iteratee`.
+		 * @param {Function} iteratee The function invoked per iteration.
+		 * @returns {Array} Returns the array of results.
+		 */
+		function baseTimes(n, iteratee) {
+		  var index = -1,
+		      result = Array(n);
+
+		  while (++index < n) {
+		    result[index] = iteratee(index);
+		  }
+		  return result;
+		}
+
+		/**
+		 * The base implementation of `_.unary` without support for storing metadata.
+		 *
+		 * @private
+		 * @param {Function} func The function to cap arguments for.
+		 * @returns {Function} Returns the new capped function.
+		 */
+		function baseUnary(func) {
+		  return function(value) {
+		    return func(value);
+		  };
+		}
+
+		/**
+		 * Checks if a `cache` value for `key` exists.
+		 *
+		 * @private
+		 * @param {Object} cache The cache to query.
+		 * @param {string} key The key of the entry to check.
+		 * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+		 */
+		function cacheHas(cache, key) {
+		  return cache.has(key);
+		}
+
+		/**
+		 * Gets the value at `key` of `object`.
+		 *
+		 * @private
+		 * @param {Object} [object] The object to query.
+		 * @param {string} key The key of the property to get.
+		 * @returns {*} Returns the property value.
+		 */
+		function getValue(object, key) {
+		  return object == null ? undefined : object[key];
+		}
+
+		/**
+		 * Converts `map` to its key-value pairs.
+		 *
+		 * @private
+		 * @param {Object} map The map to convert.
+		 * @returns {Array} Returns the key-value pairs.
+		 */
+		function mapToArray(map) {
+		  var index = -1,
+		      result = Array(map.size);
+
+		  map.forEach(function(value, key) {
+		    result[++index] = [key, value];
+		  });
+		  return result;
+		}
+
+		/**
+		 * Creates a unary function that invokes `func` with its argument transformed.
+		 *
+		 * @private
+		 * @param {Function} func The function to wrap.
+		 * @param {Function} transform The argument transform.
+		 * @returns {Function} Returns the new function.
+		 */
+		function overArg(func, transform) {
+		  return function(arg) {
+		    return func(transform(arg));
+		  };
+		}
+
+		/**
+		 * Converts `set` to an array of its values.
+		 *
+		 * @private
+		 * @param {Object} set The set to convert.
+		 * @returns {Array} Returns the values.
+		 */
+		function setToArray(set) {
+		  var index = -1,
+		      result = Array(set.size);
+
+		  set.forEach(function(value) {
+		    result[++index] = value;
+		  });
+		  return result;
+		}
+
+		/** Used for built-in method references. */
+		var arrayProto = Array.prototype,
+		    funcProto = Function.prototype,
+		    objectProto = Object.prototype;
+
+		/** Used to detect overreaching core-js shims. */
+		var coreJsData = root['__core-js_shared__'];
+
+		/** Used to resolve the decompiled source of functions. */
+		var funcToString = funcProto.toString;
+
+		/** Used to check objects for own properties. */
+		var hasOwnProperty = objectProto.hasOwnProperty;
+
+		/** Used to detect methods masquerading as native. */
+		var maskSrcKey = (function() {
+		  var uid = /[^.]+$/.exec(coreJsData && coreJsData.keys && coreJsData.keys.IE_PROTO || '');
+		  return uid ? ('Symbol(src)_1.' + uid) : '';
+		}());
+
+		/**
+		 * Used to resolve the
+		 * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+		 * of values.
+		 */
+		var nativeObjectToString = objectProto.toString;
+
+		/** Used to detect if a method is native. */
+		var reIsNative = RegExp('^' +
+		  funcToString.call(hasOwnProperty).replace(reRegExpChar, '\\$&')
+		  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+		);
+
+		/** Built-in value references. */
+		var Buffer = moduleExports ? root.Buffer : undefined,
+		    Symbol = root.Symbol,
+		    Uint8Array = root.Uint8Array,
+		    propertyIsEnumerable = objectProto.propertyIsEnumerable,
+		    splice = arrayProto.splice,
+		    symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+
+		/* Built-in method references for those with the same name as other `lodash` methods. */
+		var nativeGetSymbols = Object.getOwnPropertySymbols,
+		    nativeIsBuffer = Buffer ? Buffer.isBuffer : undefined,
+		    nativeKeys = overArg(Object.keys, Object);
+
+		/* Built-in method references that are verified to be native. */
+		var DataView = getNative(root, 'DataView'),
+		    Map = getNative(root, 'Map'),
+		    Promise = getNative(root, 'Promise'),
+		    Set = getNative(root, 'Set'),
+		    WeakMap = getNative(root, 'WeakMap'),
+		    nativeCreate = getNative(Object, 'create');
+
+		/** Used to detect maps, sets, and weakmaps. */
+		var dataViewCtorString = toSource(DataView),
+		    mapCtorString = toSource(Map),
+		    promiseCtorString = toSource(Promise),
+		    setCtorString = toSource(Set),
+		    weakMapCtorString = toSource(WeakMap);
+
+		/** Used to convert symbols to primitives and strings. */
+		var symbolProto = Symbol ? Symbol.prototype : undefined,
+		    symbolValueOf = symbolProto ? symbolProto.valueOf : undefined;
+
+		/**
+		 * Creates a hash object.
+		 *
+		 * @private
+		 * @constructor
+		 * @param {Array} [entries] The key-value pairs to cache.
+		 */
+		function Hash(entries) {
+		  var index = -1,
+		      length = entries == null ? 0 : entries.length;
+
+		  this.clear();
+		  while (++index < length) {
+		    var entry = entries[index];
+		    this.set(entry[0], entry[1]);
+		  }
+		}
+
+		/**
+		 * Removes all key-value entries from the hash.
+		 *
+		 * @private
+		 * @name clear
+		 * @memberOf Hash
+		 */
+		function hashClear() {
+		  this.__data__ = nativeCreate ? nativeCreate(null) : {};
+		  this.size = 0;
+		}
+
+		/**
+		 * Removes `key` and its value from the hash.
+		 *
+		 * @private
+		 * @name delete
+		 * @memberOf Hash
+		 * @param {Object} hash The hash to modify.
+		 * @param {string} key The key of the value to remove.
+		 * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+		 */
+		function hashDelete(key) {
+		  var result = this.has(key) && delete this.__data__[key];
+		  this.size -= result ? 1 : 0;
+		  return result;
+		}
+
+		/**
+		 * Gets the hash value for `key`.
+		 *
+		 * @private
+		 * @name get
+		 * @memberOf Hash
+		 * @param {string} key The key of the value to get.
+		 * @returns {*} Returns the entry value.
+		 */
+		function hashGet(key) {
+		  var data = this.__data__;
+		  if (nativeCreate) {
+		    var result = data[key];
+		    return result === HASH_UNDEFINED ? undefined : result;
+		  }
+		  return hasOwnProperty.call(data, key) ? data[key] : undefined;
+		}
+
+		/**
+		 * Checks if a hash value for `key` exists.
+		 *
+		 * @private
+		 * @name has
+		 * @memberOf Hash
+		 * @param {string} key The key of the entry to check.
+		 * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+		 */
+		function hashHas(key) {
+		  var data = this.__data__;
+		  return nativeCreate ? (data[key] !== undefined) : hasOwnProperty.call(data, key);
+		}
+
+		/**
+		 * Sets the hash `key` to `value`.
+		 *
+		 * @private
+		 * @name set
+		 * @memberOf Hash
+		 * @param {string} key The key of the value to set.
+		 * @param {*} value The value to set.
+		 * @returns {Object} Returns the hash instance.
+		 */
+		function hashSet(key, value) {
+		  var data = this.__data__;
+		  this.size += this.has(key) ? 0 : 1;
+		  data[key] = (nativeCreate && value === undefined) ? HASH_UNDEFINED : value;
+		  return this;
+		}
+
+		// Add methods to `Hash`.
+		Hash.prototype.clear = hashClear;
+		Hash.prototype['delete'] = hashDelete;
+		Hash.prototype.get = hashGet;
+		Hash.prototype.has = hashHas;
+		Hash.prototype.set = hashSet;
+
+		/**
+		 * Creates an list cache object.
+		 *
+		 * @private
+		 * @constructor
+		 * @param {Array} [entries] The key-value pairs to cache.
+		 */
+		function ListCache(entries) {
+		  var index = -1,
+		      length = entries == null ? 0 : entries.length;
+
+		  this.clear();
+		  while (++index < length) {
+		    var entry = entries[index];
+		    this.set(entry[0], entry[1]);
+		  }
+		}
+
+		/**
+		 * Removes all key-value entries from the list cache.
+		 *
+		 * @private
+		 * @name clear
+		 * @memberOf ListCache
+		 */
+		function listCacheClear() {
+		  this.__data__ = [];
+		  this.size = 0;
+		}
+
+		/**
+		 * Removes `key` and its value from the list cache.
+		 *
+		 * @private
+		 * @name delete
+		 * @memberOf ListCache
+		 * @param {string} key The key of the value to remove.
+		 * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+		 */
+		function listCacheDelete(key) {
+		  var data = this.__data__,
+		      index = assocIndexOf(data, key);
+
+		  if (index < 0) {
+		    return false;
+		  }
+		  var lastIndex = data.length - 1;
+		  if (index == lastIndex) {
+		    data.pop();
+		  } else {
+		    splice.call(data, index, 1);
+		  }
+		  --this.size;
+		  return true;
+		}
+
+		/**
+		 * Gets the list cache value for `key`.
+		 *
+		 * @private
+		 * @name get
+		 * @memberOf ListCache
+		 * @param {string} key The key of the value to get.
+		 * @returns {*} Returns the entry value.
+		 */
+		function listCacheGet(key) {
+		  var data = this.__data__,
+		      index = assocIndexOf(data, key);
+
+		  return index < 0 ? undefined : data[index][1];
+		}
+
+		/**
+		 * Checks if a list cache value for `key` exists.
+		 *
+		 * @private
+		 * @name has
+		 * @memberOf ListCache
+		 * @param {string} key The key of the entry to check.
+		 * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+		 */
+		function listCacheHas(key) {
+		  return assocIndexOf(this.__data__, key) > -1;
+		}
+
+		/**
+		 * Sets the list cache `key` to `value`.
+		 *
+		 * @private
+		 * @name set
+		 * @memberOf ListCache
+		 * @param {string} key The key of the value to set.
+		 * @param {*} value The value to set.
+		 * @returns {Object} Returns the list cache instance.
+		 */
+		function listCacheSet(key, value) {
+		  var data = this.__data__,
+		      index = assocIndexOf(data, key);
+
+		  if (index < 0) {
+		    ++this.size;
+		    data.push([key, value]);
+		  } else {
+		    data[index][1] = value;
+		  }
+		  return this;
+		}
+
+		// Add methods to `ListCache`.
+		ListCache.prototype.clear = listCacheClear;
+		ListCache.prototype['delete'] = listCacheDelete;
+		ListCache.prototype.get = listCacheGet;
+		ListCache.prototype.has = listCacheHas;
+		ListCache.prototype.set = listCacheSet;
+
+		/**
+		 * Creates a map cache object to store key-value pairs.
+		 *
+		 * @private
+		 * @constructor
+		 * @param {Array} [entries] The key-value pairs to cache.
+		 */
+		function MapCache(entries) {
+		  var index = -1,
+		      length = entries == null ? 0 : entries.length;
+
+		  this.clear();
+		  while (++index < length) {
+		    var entry = entries[index];
+		    this.set(entry[0], entry[1]);
+		  }
+		}
+
+		/**
+		 * Removes all key-value entries from the map.
+		 *
+		 * @private
+		 * @name clear
+		 * @memberOf MapCache
+		 */
+		function mapCacheClear() {
+		  this.size = 0;
+		  this.__data__ = {
+		    'hash': new Hash,
+		    'map': new (Map || ListCache),
+		    'string': new Hash
+		  };
+		}
+
+		/**
+		 * Removes `key` and its value from the map.
+		 *
+		 * @private
+		 * @name delete
+		 * @memberOf MapCache
+		 * @param {string} key The key of the value to remove.
+		 * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+		 */
+		function mapCacheDelete(key) {
+		  var result = getMapData(this, key)['delete'](key);
+		  this.size -= result ? 1 : 0;
+		  return result;
+		}
+
+		/**
+		 * Gets the map value for `key`.
+		 *
+		 * @private
+		 * @name get
+		 * @memberOf MapCache
+		 * @param {string} key The key of the value to get.
+		 * @returns {*} Returns the entry value.
+		 */
+		function mapCacheGet(key) {
+		  return getMapData(this, key).get(key);
+		}
+
+		/**
+		 * Checks if a map value for `key` exists.
+		 *
+		 * @private
+		 * @name has
+		 * @memberOf MapCache
+		 * @param {string} key The key of the entry to check.
+		 * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+		 */
+		function mapCacheHas(key) {
+		  return getMapData(this, key).has(key);
+		}
+
+		/**
+		 * Sets the map `key` to `value`.
+		 *
+		 * @private
+		 * @name set
+		 * @memberOf MapCache
+		 * @param {string} key The key of the value to set.
+		 * @param {*} value The value to set.
+		 * @returns {Object} Returns the map cache instance.
+		 */
+		function mapCacheSet(key, value) {
+		  var data = getMapData(this, key),
+		      size = data.size;
+
+		  data.set(key, value);
+		  this.size += data.size == size ? 0 : 1;
+		  return this;
+		}
+
+		// Add methods to `MapCache`.
+		MapCache.prototype.clear = mapCacheClear;
+		MapCache.prototype['delete'] = mapCacheDelete;
+		MapCache.prototype.get = mapCacheGet;
+		MapCache.prototype.has = mapCacheHas;
+		MapCache.prototype.set = mapCacheSet;
+
+		/**
+		 *
+		 * Creates an array cache object to store unique values.
+		 *
+		 * @private
+		 * @constructor
+		 * @param {Array} [values] The values to cache.
+		 */
+		function SetCache(values) {
+		  var index = -1,
+		      length = values == null ? 0 : values.length;
+
+		  this.__data__ = new MapCache;
+		  while (++index < length) {
+		    this.add(values[index]);
+		  }
+		}
+
+		/**
+		 * Adds `value` to the array cache.
+		 *
+		 * @private
+		 * @name add
+		 * @memberOf SetCache
+		 * @alias push
+		 * @param {*} value The value to cache.
+		 * @returns {Object} Returns the cache instance.
+		 */
+		function setCacheAdd(value) {
+		  this.__data__.set(value, HASH_UNDEFINED);
+		  return this;
+		}
+
+		/**
+		 * Checks if `value` is in the array cache.
+		 *
+		 * @private
+		 * @name has
+		 * @memberOf SetCache
+		 * @param {*} value The value to search for.
+		 * @returns {number} Returns `true` if `value` is found, else `false`.
+		 */
+		function setCacheHas(value) {
+		  return this.__data__.has(value);
+		}
+
+		// Add methods to `SetCache`.
+		SetCache.prototype.add = SetCache.prototype.push = setCacheAdd;
+		SetCache.prototype.has = setCacheHas;
+
+		/**
+		 * Creates a stack cache object to store key-value pairs.
+		 *
+		 * @private
+		 * @constructor
+		 * @param {Array} [entries] The key-value pairs to cache.
+		 */
+		function Stack(entries) {
+		  var data = this.__data__ = new ListCache(entries);
+		  this.size = data.size;
+		}
+
+		/**
+		 * Removes all key-value entries from the stack.
+		 *
+		 * @private
+		 * @name clear
+		 * @memberOf Stack
+		 */
+		function stackClear() {
+		  this.__data__ = new ListCache;
+		  this.size = 0;
+		}
+
+		/**
+		 * Removes `key` and its value from the stack.
+		 *
+		 * @private
+		 * @name delete
+		 * @memberOf Stack
+		 * @param {string} key The key of the value to remove.
+		 * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+		 */
+		function stackDelete(key) {
+		  var data = this.__data__,
+		      result = data['delete'](key);
+
+		  this.size = data.size;
+		  return result;
+		}
+
+		/**
+		 * Gets the stack value for `key`.
+		 *
+		 * @private
+		 * @name get
+		 * @memberOf Stack
+		 * @param {string} key The key of the value to get.
+		 * @returns {*} Returns the entry value.
+		 */
+		function stackGet(key) {
+		  return this.__data__.get(key);
+		}
+
+		/**
+		 * Checks if a stack value for `key` exists.
+		 *
+		 * @private
+		 * @name has
+		 * @memberOf Stack
+		 * @param {string} key The key of the entry to check.
+		 * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+		 */
+		function stackHas(key) {
+		  return this.__data__.has(key);
+		}
+
+		/**
+		 * Sets the stack `key` to `value`.
+		 *
+		 * @private
+		 * @name set
+		 * @memberOf Stack
+		 * @param {string} key The key of the value to set.
+		 * @param {*} value The value to set.
+		 * @returns {Object} Returns the stack cache instance.
+		 */
+		function stackSet(key, value) {
+		  var data = this.__data__;
+		  if (data instanceof ListCache) {
+		    var pairs = data.__data__;
+		    if (!Map || (pairs.length < LARGE_ARRAY_SIZE - 1)) {
+		      pairs.push([key, value]);
+		      this.size = ++data.size;
+		      return this;
+		    }
+		    data = this.__data__ = new MapCache(pairs);
+		  }
+		  data.set(key, value);
+		  this.size = data.size;
+		  return this;
+		}
+
+		// Add methods to `Stack`.
+		Stack.prototype.clear = stackClear;
+		Stack.prototype['delete'] = stackDelete;
+		Stack.prototype.get = stackGet;
+		Stack.prototype.has = stackHas;
+		Stack.prototype.set = stackSet;
+
+		/**
+		 * Creates an array of the enumerable property names of the array-like `value`.
+		 *
+		 * @private
+		 * @param {*} value The value to query.
+		 * @param {boolean} inherited Specify returning inherited property names.
+		 * @returns {Array} Returns the array of property names.
+		 */
+		function arrayLikeKeys(value, inherited) {
+		  var isArr = isArray(value),
+		      isArg = !isArr && isArguments(value),
+		      isBuff = !isArr && !isArg && isBuffer(value),
+		      isType = !isArr && !isArg && !isBuff && isTypedArray(value),
+		      skipIndexes = isArr || isArg || isBuff || isType,
+		      result = skipIndexes ? baseTimes(value.length, String) : [],
+		      length = result.length;
+
+		  for (var key in value) {
+		    if ((hasOwnProperty.call(value, key)) &&
+		        !(skipIndexes && (
+		           // Safari 9 has enumerable `arguments.length` in strict mode.
+		           key == 'length' ||
+		           // Node.js 0.10 has enumerable non-index properties on buffers.
+		           (isBuff && (key == 'offset' || key == 'parent')) ||
+		           // PhantomJS 2 has enumerable non-index properties on typed arrays.
+		           (isType && (key == 'buffer' || key == 'byteLength' || key == 'byteOffset')) ||
+		           // Skip index properties.
+		           isIndex(key, length)
+		        ))) {
+		      result.push(key);
+		    }
+		  }
+		  return result;
+		}
+
+		/**
+		 * Gets the index at which the `key` is found in `array` of key-value pairs.
+		 *
+		 * @private
+		 * @param {Array} array The array to inspect.
+		 * @param {*} key The key to search for.
+		 * @returns {number} Returns the index of the matched value, else `-1`.
+		 */
+		function assocIndexOf(array, key) {
+		  var length = array.length;
+		  while (length--) {
+		    if (eq(array[length][0], key)) {
+		      return length;
+		    }
+		  }
+		  return -1;
+		}
+
+		/**
+		 * The base implementation of `getAllKeys` and `getAllKeysIn` which uses
+		 * `keysFunc` and `symbolsFunc` to get the enumerable property names and
+		 * symbols of `object`.
+		 *
+		 * @private
+		 * @param {Object} object The object to query.
+		 * @param {Function} keysFunc The function to get the keys of `object`.
+		 * @param {Function} symbolsFunc The function to get the symbols of `object`.
+		 * @returns {Array} Returns the array of property names and symbols.
+		 */
+		function baseGetAllKeys(object, keysFunc, symbolsFunc) {
+		  var result = keysFunc(object);
+		  return isArray(object) ? result : arrayPush(result, symbolsFunc(object));
+		}
+
+		/**
+		 * The base implementation of `getTag` without fallbacks for buggy environments.
+		 *
+		 * @private
+		 * @param {*} value The value to query.
+		 * @returns {string} Returns the `toStringTag`.
+		 */
+		function baseGetTag(value) {
+		  if (value == null) {
+		    return value === undefined ? undefinedTag : nullTag;
+		  }
+		  return (symToStringTag && symToStringTag in Object(value))
+		    ? getRawTag(value)
+		    : objectToString(value);
+		}
+
+		/**
+		 * The base implementation of `_.isArguments`.
+		 *
+		 * @private
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+		 */
+		function baseIsArguments(value) {
+		  return isObjectLike(value) && baseGetTag(value) == argsTag;
+		}
+
+		/**
+		 * The base implementation of `_.isEqual` which supports partial comparisons
+		 * and tracks traversed objects.
+		 *
+		 * @private
+		 * @param {*} value The value to compare.
+		 * @param {*} other The other value to compare.
+		 * @param {boolean} bitmask The bitmask flags.
+		 *  1 - Unordered comparison
+		 *  2 - Partial comparison
+		 * @param {Function} [customizer] The function to customize comparisons.
+		 * @param {Object} [stack] Tracks traversed `value` and `other` objects.
+		 * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+		 */
+		function baseIsEqual(value, other, bitmask, customizer, stack) {
+		  if (value === other) {
+		    return true;
+		  }
+		  if (value == null || other == null || (!isObjectLike(value) && !isObjectLike(other))) {
+		    return value !== value && other !== other;
+		  }
+		  return baseIsEqualDeep(value, other, bitmask, customizer, baseIsEqual, stack);
+		}
+
+		/**
+		 * A specialized version of `baseIsEqual` for arrays and objects which performs
+		 * deep comparisons and tracks traversed objects enabling objects with circular
+		 * references to be compared.
+		 *
+		 * @private
+		 * @param {Object} object The object to compare.
+		 * @param {Object} other The other object to compare.
+		 * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
+		 * @param {Function} customizer The function to customize comparisons.
+		 * @param {Function} equalFunc The function to determine equivalents of values.
+		 * @param {Object} [stack] Tracks traversed `object` and `other` objects.
+		 * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+		 */
+		function baseIsEqualDeep(object, other, bitmask, customizer, equalFunc, stack) {
+		  var objIsArr = isArray(object),
+		      othIsArr = isArray(other),
+		      objTag = objIsArr ? arrayTag : getTag(object),
+		      othTag = othIsArr ? arrayTag : getTag(other);
+
+		  objTag = objTag == argsTag ? objectTag : objTag;
+		  othTag = othTag == argsTag ? objectTag : othTag;
+
+		  var objIsObj = objTag == objectTag,
+		      othIsObj = othTag == objectTag,
+		      isSameTag = objTag == othTag;
+
+		  if (isSameTag && isBuffer(object)) {
+		    if (!isBuffer(other)) {
+		      return false;
+		    }
+		    objIsArr = true;
+		    objIsObj = false;
+		  }
+		  if (isSameTag && !objIsObj) {
+		    stack || (stack = new Stack);
+		    return (objIsArr || isTypedArray(object))
+		      ? equalArrays(object, other, bitmask, customizer, equalFunc, stack)
+		      : equalByTag(object, other, objTag, bitmask, customizer, equalFunc, stack);
+		  }
+		  if (!(bitmask & COMPARE_PARTIAL_FLAG)) {
+		    var objIsWrapped = objIsObj && hasOwnProperty.call(object, '__wrapped__'),
+		        othIsWrapped = othIsObj && hasOwnProperty.call(other, '__wrapped__');
+
+		    if (objIsWrapped || othIsWrapped) {
+		      var objUnwrapped = objIsWrapped ? object.value() : object,
+		          othUnwrapped = othIsWrapped ? other.value() : other;
+
+		      stack || (stack = new Stack);
+		      return equalFunc(objUnwrapped, othUnwrapped, bitmask, customizer, stack);
+		    }
+		  }
+		  if (!isSameTag) {
+		    return false;
+		  }
+		  stack || (stack = new Stack);
+		  return equalObjects(object, other, bitmask, customizer, equalFunc, stack);
+		}
+
+		/**
+		 * The base implementation of `_.isNative` without bad shim checks.
+		 *
+		 * @private
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is a native function,
+		 *  else `false`.
+		 */
+		function baseIsNative(value) {
+		  if (!isObject(value) || isMasked(value)) {
+		    return false;
+		  }
+		  var pattern = isFunction(value) ? reIsNative : reIsHostCtor;
+		  return pattern.test(toSource(value));
+		}
+
+		/**
+		 * The base implementation of `_.isTypedArray` without Node.js optimizations.
+		 *
+		 * @private
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+		 */
+		function baseIsTypedArray(value) {
+		  return isObjectLike(value) &&
+		    isLength(value.length) && !!typedArrayTags[baseGetTag(value)];
+		}
+
+		/**
+		 * The base implementation of `_.keys` which doesn't treat sparse arrays as dense.
+		 *
+		 * @private
+		 * @param {Object} object The object to query.
+		 * @returns {Array} Returns the array of property names.
+		 */
+		function baseKeys(object) {
+		  if (!isPrototype(object)) {
+		    return nativeKeys(object);
+		  }
+		  var result = [];
+		  for (var key in Object(object)) {
+		    if (hasOwnProperty.call(object, key) && key != 'constructor') {
+		      result.push(key);
+		    }
+		  }
+		  return result;
+		}
+
+		/**
+		 * A specialized version of `baseIsEqualDeep` for arrays with support for
+		 * partial deep comparisons.
+		 *
+		 * @private
+		 * @param {Array} array The array to compare.
+		 * @param {Array} other The other array to compare.
+		 * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
+		 * @param {Function} customizer The function to customize comparisons.
+		 * @param {Function} equalFunc The function to determine equivalents of values.
+		 * @param {Object} stack Tracks traversed `array` and `other` objects.
+		 * @returns {boolean} Returns `true` if the arrays are equivalent, else `false`.
+		 */
+		function equalArrays(array, other, bitmask, customizer, equalFunc, stack) {
+		  var isPartial = bitmask & COMPARE_PARTIAL_FLAG,
+		      arrLength = array.length,
+		      othLength = other.length;
+
+		  if (arrLength != othLength && !(isPartial && othLength > arrLength)) {
+		    return false;
+		  }
+		  // Assume cyclic values are equal.
+		  var stacked = stack.get(array);
+		  if (stacked && stack.get(other)) {
+		    return stacked == other;
+		  }
+		  var index = -1,
+		      result = true,
+		      seen = (bitmask & COMPARE_UNORDERED_FLAG) ? new SetCache : undefined;
+
+		  stack.set(array, other);
+		  stack.set(other, array);
+
+		  // Ignore non-index properties.
+		  while (++index < arrLength) {
+		    var arrValue = array[index],
+		        othValue = other[index];
+
+		    if (customizer) {
+		      var compared = isPartial
+		        ? customizer(othValue, arrValue, index, other, array, stack)
+		        : customizer(arrValue, othValue, index, array, other, stack);
+		    }
+		    if (compared !== undefined) {
+		      if (compared) {
+		        continue;
+		      }
+		      result = false;
+		      break;
+		    }
+		    // Recursively compare arrays (susceptible to call stack limits).
+		    if (seen) {
+		      if (!arraySome(other, function(othValue, othIndex) {
+		            if (!cacheHas(seen, othIndex) &&
+		                (arrValue === othValue || equalFunc(arrValue, othValue, bitmask, customizer, stack))) {
+		              return seen.push(othIndex);
+		            }
+		          })) {
+		        result = false;
+		        break;
+		      }
+		    } else if (!(
+		          arrValue === othValue ||
+		            equalFunc(arrValue, othValue, bitmask, customizer, stack)
+		        )) {
+		      result = false;
+		      break;
+		    }
+		  }
+		  stack['delete'](array);
+		  stack['delete'](other);
+		  return result;
+		}
+
+		/**
+		 * A specialized version of `baseIsEqualDeep` for comparing objects of
+		 * the same `toStringTag`.
+		 *
+		 * **Note:** This function only supports comparing values with tags of
+		 * `Boolean`, `Date`, `Error`, `Number`, `RegExp`, or `String`.
+		 *
+		 * @private
+		 * @param {Object} object The object to compare.
+		 * @param {Object} other The other object to compare.
+		 * @param {string} tag The `toStringTag` of the objects to compare.
+		 * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
+		 * @param {Function} customizer The function to customize comparisons.
+		 * @param {Function} equalFunc The function to determine equivalents of values.
+		 * @param {Object} stack Tracks traversed `object` and `other` objects.
+		 * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+		 */
+		function equalByTag(object, other, tag, bitmask, customizer, equalFunc, stack) {
+		  switch (tag) {
+		    case dataViewTag:
+		      if ((object.byteLength != other.byteLength) ||
+		          (object.byteOffset != other.byteOffset)) {
+		        return false;
+		      }
+		      object = object.buffer;
+		      other = other.buffer;
+
+		    case arrayBufferTag:
+		      if ((object.byteLength != other.byteLength) ||
+		          !equalFunc(new Uint8Array(object), new Uint8Array(other))) {
+		        return false;
+		      }
+		      return true;
+
+		    case boolTag:
+		    case dateTag:
+		    case numberTag:
+		      // Coerce booleans to `1` or `0` and dates to milliseconds.
+		      // Invalid dates are coerced to `NaN`.
+		      return eq(+object, +other);
+
+		    case errorTag:
+		      return object.name == other.name && object.message == other.message;
+
+		    case regexpTag:
+		    case stringTag:
+		      // Coerce regexes to strings and treat strings, primitives and objects,
+		      // as equal. See http://www.ecma-international.org/ecma-262/7.0/#sec-regexp.prototype.tostring
+		      // for more details.
+		      return object == (other + '');
+
+		    case mapTag:
+		      var convert = mapToArray;
+
+		    case setTag:
+		      var isPartial = bitmask & COMPARE_PARTIAL_FLAG;
+		      convert || (convert = setToArray);
+
+		      if (object.size != other.size && !isPartial) {
+		        return false;
+		      }
+		      // Assume cyclic values are equal.
+		      var stacked = stack.get(object);
+		      if (stacked) {
+		        return stacked == other;
+		      }
+		      bitmask |= COMPARE_UNORDERED_FLAG;
+
+		      // Recursively compare objects (susceptible to call stack limits).
+		      stack.set(object, other);
+		      var result = equalArrays(convert(object), convert(other), bitmask, customizer, equalFunc, stack);
+		      stack['delete'](object);
+		      return result;
+
+		    case symbolTag:
+		      if (symbolValueOf) {
+		        return symbolValueOf.call(object) == symbolValueOf.call(other);
+		      }
+		  }
+		  return false;
+		}
+
+		/**
+		 * A specialized version of `baseIsEqualDeep` for objects with support for
+		 * partial deep comparisons.
+		 *
+		 * @private
+		 * @param {Object} object The object to compare.
+		 * @param {Object} other The other object to compare.
+		 * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
+		 * @param {Function} customizer The function to customize comparisons.
+		 * @param {Function} equalFunc The function to determine equivalents of values.
+		 * @param {Object} stack Tracks traversed `object` and `other` objects.
+		 * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+		 */
+		function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
+		  var isPartial = bitmask & COMPARE_PARTIAL_FLAG,
+		      objProps = getAllKeys(object),
+		      objLength = objProps.length,
+		      othProps = getAllKeys(other),
+		      othLength = othProps.length;
+
+		  if (objLength != othLength && !isPartial) {
+		    return false;
+		  }
+		  var index = objLength;
+		  while (index--) {
+		    var key = objProps[index];
+		    if (!(isPartial ? key in other : hasOwnProperty.call(other, key))) {
+		      return false;
+		    }
+		  }
+		  // Assume cyclic values are equal.
+		  var stacked = stack.get(object);
+		  if (stacked && stack.get(other)) {
+		    return stacked == other;
+		  }
+		  var result = true;
+		  stack.set(object, other);
+		  stack.set(other, object);
+
+		  var skipCtor = isPartial;
+		  while (++index < objLength) {
+		    key = objProps[index];
+		    var objValue = object[key],
+		        othValue = other[key];
+
+		    if (customizer) {
+		      var compared = isPartial
+		        ? customizer(othValue, objValue, key, other, object, stack)
+		        : customizer(objValue, othValue, key, object, other, stack);
+		    }
+		    // Recursively compare objects (susceptible to call stack limits).
+		    if (!(compared === undefined
+		          ? (objValue === othValue || equalFunc(objValue, othValue, bitmask, customizer, stack))
+		          : compared
+		        )) {
+		      result = false;
+		      break;
+		    }
+		    skipCtor || (skipCtor = key == 'constructor');
+		  }
+		  if (result && !skipCtor) {
+		    var objCtor = object.constructor,
+		        othCtor = other.constructor;
+
+		    // Non `Object` object instances with different constructors are not equal.
+		    if (objCtor != othCtor &&
+		        ('constructor' in object && 'constructor' in other) &&
+		        !(typeof objCtor == 'function' && objCtor instanceof objCtor &&
+		          typeof othCtor == 'function' && othCtor instanceof othCtor)) {
+		      result = false;
+		    }
+		  }
+		  stack['delete'](object);
+		  stack['delete'](other);
+		  return result;
+		}
+
+		/**
+		 * Creates an array of own enumerable property names and symbols of `object`.
+		 *
+		 * @private
+		 * @param {Object} object The object to query.
+		 * @returns {Array} Returns the array of property names and symbols.
+		 */
+		function getAllKeys(object) {
+		  return baseGetAllKeys(object, keys, getSymbols);
+		}
+
+		/**
+		 * Gets the data for `map`.
+		 *
+		 * @private
+		 * @param {Object} map The map to query.
+		 * @param {string} key The reference key.
+		 * @returns {*} Returns the map data.
+		 */
+		function getMapData(map, key) {
+		  var data = map.__data__;
+		  return isKeyable(key)
+		    ? data[typeof key == 'string' ? 'string' : 'hash']
+		    : data.map;
+		}
+
+		/**
+		 * Gets the native function at `key` of `object`.
+		 *
+		 * @private
+		 * @param {Object} object The object to query.
+		 * @param {string} key The key of the method to get.
+		 * @returns {*} Returns the function if it's native, else `undefined`.
+		 */
+		function getNative(object, key) {
+		  var value = getValue(object, key);
+		  return baseIsNative(value) ? value : undefined;
+		}
+
+		/**
+		 * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
+		 *
+		 * @private
+		 * @param {*} value The value to query.
+		 * @returns {string} Returns the raw `toStringTag`.
+		 */
+		function getRawTag(value) {
+		  var isOwn = hasOwnProperty.call(value, symToStringTag),
+		      tag = value[symToStringTag];
+
+		  try {
+		    value[symToStringTag] = undefined;
+		    var unmasked = true;
+		  } catch (e) {}
+
+		  var result = nativeObjectToString.call(value);
+		  if (unmasked) {
+		    if (isOwn) {
+		      value[symToStringTag] = tag;
+		    } else {
+		      delete value[symToStringTag];
+		    }
+		  }
+		  return result;
+		}
+
+		/**
+		 * Creates an array of the own enumerable symbols of `object`.
+		 *
+		 * @private
+		 * @param {Object} object The object to query.
+		 * @returns {Array} Returns the array of symbols.
+		 */
+		var getSymbols = !nativeGetSymbols ? stubArray : function(object) {
+		  if (object == null) {
+		    return [];
+		  }
+		  object = Object(object);
+		  return arrayFilter(nativeGetSymbols(object), function(symbol) {
+		    return propertyIsEnumerable.call(object, symbol);
+		  });
+		};
+
+		/**
+		 * Gets the `toStringTag` of `value`.
+		 *
+		 * @private
+		 * @param {*} value The value to query.
+		 * @returns {string} Returns the `toStringTag`.
+		 */
+		var getTag = baseGetTag;
+
+		// Fallback for data views, maps, sets, and weak maps in IE 11 and promises in Node.js < 6.
+		if ((DataView && getTag(new DataView(new ArrayBuffer(1))) != dataViewTag) ||
+		    (Map && getTag(new Map) != mapTag) ||
+		    (Promise && getTag(Promise.resolve()) != promiseTag) ||
+		    (Set && getTag(new Set) != setTag) ||
+		    (WeakMap && getTag(new WeakMap) != weakMapTag)) {
+		  getTag = function(value) {
+		    var result = baseGetTag(value),
+		        Ctor = result == objectTag ? value.constructor : undefined,
+		        ctorString = Ctor ? toSource(Ctor) : '';
+
+		    if (ctorString) {
+		      switch (ctorString) {
+		        case dataViewCtorString: return dataViewTag;
+		        case mapCtorString: return mapTag;
+		        case promiseCtorString: return promiseTag;
+		        case setCtorString: return setTag;
+		        case weakMapCtorString: return weakMapTag;
+		      }
+		    }
+		    return result;
+		  };
+		}
+
+		/**
+		 * Checks if `value` is a valid array-like index.
+		 *
+		 * @private
+		 * @param {*} value The value to check.
+		 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+		 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+		 */
+		function isIndex(value, length) {
+		  length = length == null ? MAX_SAFE_INTEGER : length;
+		  return !!length &&
+		    (typeof value == 'number' || reIsUint.test(value)) &&
+		    (value > -1 && value % 1 == 0 && value < length);
+		}
+
+		/**
+		 * Checks if `value` is suitable for use as unique object key.
+		 *
+		 * @private
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is suitable, else `false`.
+		 */
+		function isKeyable(value) {
+		  var type = typeof value;
+		  return (type == 'string' || type == 'number' || type == 'symbol' || type == 'boolean')
+		    ? (value !== '__proto__')
+		    : (value === null);
+		}
+
+		/**
+		 * Checks if `func` has its source masked.
+		 *
+		 * @private
+		 * @param {Function} func The function to check.
+		 * @returns {boolean} Returns `true` if `func` is masked, else `false`.
+		 */
+		function isMasked(func) {
+		  return !!maskSrcKey && (maskSrcKey in func);
+		}
+
+		/**
+		 * Checks if `value` is likely a prototype object.
+		 *
+		 * @private
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is a prototype, else `false`.
+		 */
+		function isPrototype(value) {
+		  var Ctor = value && value.constructor,
+		      proto = (typeof Ctor == 'function' && Ctor.prototype) || objectProto;
+
+		  return value === proto;
+		}
+
+		/**
+		 * Converts `value` to a string using `Object.prototype.toString`.
+		 *
+		 * @private
+		 * @param {*} value The value to convert.
+		 * @returns {string} Returns the converted string.
+		 */
+		function objectToString(value) {
+		  return nativeObjectToString.call(value);
+		}
+
+		/**
+		 * Converts `func` to its source code.
+		 *
+		 * @private
+		 * @param {Function} func The function to convert.
+		 * @returns {string} Returns the source code.
+		 */
+		function toSource(func) {
+		  if (func != null) {
+		    try {
+		      return funcToString.call(func);
+		    } catch (e) {}
+		    try {
+		      return (func + '');
+		    } catch (e) {}
+		  }
+		  return '';
+		}
+
+		/**
+		 * Performs a
+		 * [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
+		 * comparison between two values to determine if they are equivalent.
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 4.0.0
+		 * @category Lang
+		 * @param {*} value The value to compare.
+		 * @param {*} other The other value to compare.
+		 * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+		 * @example
+		 *
+		 * var object = { 'a': 1 };
+		 * var other = { 'a': 1 };
+		 *
+		 * _.eq(object, object);
+		 * // => true
+		 *
+		 * _.eq(object, other);
+		 * // => false
+		 *
+		 * _.eq('a', 'a');
+		 * // => true
+		 *
+		 * _.eq('a', Object('a'));
+		 * // => false
+		 *
+		 * _.eq(NaN, NaN);
+		 * // => true
+		 */
+		function eq(value, other) {
+		  return value === other || (value !== value && other !== other);
+		}
+
+		/**
+		 * Checks if `value` is likely an `arguments` object.
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 0.1.0
+		 * @category Lang
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+		 *  else `false`.
+		 * @example
+		 *
+		 * _.isArguments(function() { return arguments; }());
+		 * // => true
+		 *
+		 * _.isArguments([1, 2, 3]);
+		 * // => false
+		 */
+		var isArguments = baseIsArguments(function() { return arguments; }()) ? baseIsArguments : function(value) {
+		  return isObjectLike(value) && hasOwnProperty.call(value, 'callee') &&
+		    !propertyIsEnumerable.call(value, 'callee');
+		};
+
+		/**
+		 * Checks if `value` is classified as an `Array` object.
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 0.1.0
+		 * @category Lang
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is an array, else `false`.
+		 * @example
+		 *
+		 * _.isArray([1, 2, 3]);
+		 * // => true
+		 *
+		 * _.isArray(document.body.children);
+		 * // => false
+		 *
+		 * _.isArray('abc');
+		 * // => false
+		 *
+		 * _.isArray(_.noop);
+		 * // => false
+		 */
+		var isArray = Array.isArray;
+
+		/**
+		 * Checks if `value` is array-like. A value is considered array-like if it's
+		 * not a function and has a `value.length` that's an integer greater than or
+		 * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 4.0.0
+		 * @category Lang
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+		 * @example
+		 *
+		 * _.isArrayLike([1, 2, 3]);
+		 * // => true
+		 *
+		 * _.isArrayLike(document.body.children);
+		 * // => true
+		 *
+		 * _.isArrayLike('abc');
+		 * // => true
+		 *
+		 * _.isArrayLike(_.noop);
+		 * // => false
+		 */
+		function isArrayLike(value) {
+		  return value != null && isLength(value.length) && !isFunction(value);
+		}
+
+		/**
+		 * Checks if `value` is a buffer.
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 4.3.0
+		 * @category Lang
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is a buffer, else `false`.
+		 * @example
+		 *
+		 * _.isBuffer(new Buffer(2));
+		 * // => true
+		 *
+		 * _.isBuffer(new Uint8Array(2));
+		 * // => false
+		 */
+		var isBuffer = nativeIsBuffer || stubFalse;
+
+		/**
+		 * Performs a deep comparison between two values to determine if they are
+		 * equivalent.
+		 *
+		 * **Note:** This method supports comparing arrays, array buffers, booleans,
+		 * date objects, error objects, maps, numbers, `Object` objects, regexes,
+		 * sets, strings, symbols, and typed arrays. `Object` objects are compared
+		 * by their own, not inherited, enumerable properties. Functions and DOM
+		 * nodes are compared by strict equality, i.e. `===`.
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 0.1.0
+		 * @category Lang
+		 * @param {*} value The value to compare.
+		 * @param {*} other The other value to compare.
+		 * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+		 * @example
+		 *
+		 * var object = { 'a': 1 };
+		 * var other = { 'a': 1 };
+		 *
+		 * _.isEqual(object, other);
+		 * // => true
+		 *
+		 * object === other;
+		 * // => false
+		 */
+		function isEqual(value, other) {
+		  return baseIsEqual(value, other);
+		}
+
+		/**
+		 * Checks if `value` is classified as a `Function` object.
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 0.1.0
+		 * @category Lang
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is a function, else `false`.
+		 * @example
+		 *
+		 * _.isFunction(_);
+		 * // => true
+		 *
+		 * _.isFunction(/abc/);
+		 * // => false
+		 */
+		function isFunction(value) {
+		  if (!isObject(value)) {
+		    return false;
+		  }
+		  // The use of `Object#toString` avoids issues with the `typeof` operator
+		  // in Safari 9 which returns 'object' for typed arrays and other constructors.
+		  var tag = baseGetTag(value);
+		  return tag == funcTag || tag == genTag || tag == asyncTag || tag == proxyTag;
+		}
+
+		/**
+		 * Checks if `value` is a valid array-like length.
+		 *
+		 * **Note:** This method is loosely based on
+		 * [`ToLength`](http://ecma-international.org/ecma-262/7.0/#sec-tolength).
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 4.0.0
+		 * @category Lang
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+		 * @example
+		 *
+		 * _.isLength(3);
+		 * // => true
+		 *
+		 * _.isLength(Number.MIN_VALUE);
+		 * // => false
+		 *
+		 * _.isLength(Infinity);
+		 * // => false
+		 *
+		 * _.isLength('3');
+		 * // => false
+		 */
+		function isLength(value) {
+		  return typeof value == 'number' &&
+		    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+		}
+
+		/**
+		 * Checks if `value` is the
+		 * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+		 * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 0.1.0
+		 * @category Lang
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+		 * @example
+		 *
+		 * _.isObject({});
+		 * // => true
+		 *
+		 * _.isObject([1, 2, 3]);
+		 * // => true
+		 *
+		 * _.isObject(_.noop);
+		 * // => true
+		 *
+		 * _.isObject(null);
+		 * // => false
+		 */
+		function isObject(value) {
+		  var type = typeof value;
+		  return value != null && (type == 'object' || type == 'function');
+		}
+
+		/**
+		 * Checks if `value` is object-like. A value is object-like if it's not `null`
+		 * and has a `typeof` result of "object".
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 4.0.0
+		 * @category Lang
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+		 * @example
+		 *
+		 * _.isObjectLike({});
+		 * // => true
+		 *
+		 * _.isObjectLike([1, 2, 3]);
+		 * // => true
+		 *
+		 * _.isObjectLike(_.noop);
+		 * // => false
+		 *
+		 * _.isObjectLike(null);
+		 * // => false
+		 */
+		function isObjectLike(value) {
+		  return value != null && typeof value == 'object';
+		}
+
+		/**
+		 * Checks if `value` is classified as a typed array.
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 3.0.0
+		 * @category Lang
+		 * @param {*} value The value to check.
+		 * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+		 * @example
+		 *
+		 * _.isTypedArray(new Uint8Array);
+		 * // => true
+		 *
+		 * _.isTypedArray([]);
+		 * // => false
+		 */
+		var isTypedArray = nodeIsTypedArray ? baseUnary(nodeIsTypedArray) : baseIsTypedArray;
+
+		/**
+		 * Creates an array of the own enumerable property names of `object`.
+		 *
+		 * **Note:** Non-object values are coerced to objects. See the
+		 * [ES spec](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
+		 * for more details.
+		 *
+		 * @static
+		 * @since 0.1.0
+		 * @memberOf _
+		 * @category Object
+		 * @param {Object} object The object to query.
+		 * @returns {Array} Returns the array of property names.
+		 * @example
+		 *
+		 * function Foo() {
+		 *   this.a = 1;
+		 *   this.b = 2;
+		 * }
+		 *
+		 * Foo.prototype.c = 3;
+		 *
+		 * _.keys(new Foo);
+		 * // => ['a', 'b'] (iteration order is not guaranteed)
+		 *
+		 * _.keys('hi');
+		 * // => ['0', '1']
+		 */
+		function keys(object) {
+		  return isArrayLike(object) ? arrayLikeKeys(object) : baseKeys(object);
+		}
+
+		/**
+		 * This method returns a new empty array.
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 4.13.0
+		 * @category Util
+		 * @returns {Array} Returns the new empty array.
+		 * @example
+		 *
+		 * var arrays = _.times(2, _.stubArray);
+		 *
+		 * console.log(arrays);
+		 * // => [[], []]
+		 *
+		 * console.log(arrays[0] === arrays[1]);
+		 * // => false
+		 */
+		function stubArray() {
+		  return [];
+		}
+
+		/**
+		 * This method returns `false`.
+		 *
+		 * @static
+		 * @memberOf _
+		 * @since 4.13.0
+		 * @category Util
+		 * @returns {boolean} Returns `false`.
+		 * @example
+		 *
+		 * _.times(2, _.stubFalse);
+		 * // => [false, false]
+		 */
+		function stubFalse() {
+		  return false;
+		}
+
+		module.exports = isEqual; 
+	} (lodash_isequal, lodash_isequal.exports));
+	return lodash_isequal.exports;
+}
+
+var lodash_isequalExports = requireLodash_isequal();
+var isEqual = /*@__PURE__*/getDefaultExportFromCjs(lodash_isequalExports);
 
 // all diacritics
 let diacritics = {
@@ -2385,6 +2398,10 @@ const _sfc_main$6 = {
       return ((this.currentPage - 1) * this.currentPerPage) + 1;
     },
     lastRecordOnPage() {
+      // if the setting is set to 'all'
+      if(this.currentPerPage === -1) {
+        return this.totalRecords;
+      }
       return Math.min(this.totalRecords, this.currentPage * this.currentPerPage);
     },
     recordInfo() {
@@ -2408,7 +2425,7 @@ const _sfc_main$6 = {
         lastRecordOnPage: last,
         totalRecords: this.totalRecords,
         currentPage: this.currentPage,
-        totalPages: this.lastPage,
+        totalPage: this.lastPage,
       };
     },
   },
@@ -2490,8 +2507,11 @@ const _sfc_main$5 = {
     customRowsPerPageDropdown: { default() { return []; } },
     paginateDropdownAllowAll: { default: true },
     mode: { default: PAGINATION_MODES.Records },
+    jumpFirstOrLast: { default: false },
 
     // text options
+    firstText: { default: "First" },
+    lastText: { default: "Last" },
     nextText: { default: 'Next' },
     prevText: { default: 'Prev' },
     rowsPerPageText: { default: 'Rows per page:' },
@@ -2521,8 +2541,8 @@ const _sfc_main$5 = {
 
     customRowsPerPageDropdown: {
       handler() {
-        this.handlePerPage();
-      },
+      this.handlePerPage();
+    },
       deep: true,
     },
 
@@ -2538,10 +2558,24 @@ const _sfc_main$5 = {
   computed: {
     // Number of pages
     pagesCount() {
+      // if the setting is set to 'all'
+      if(this.currentPerPage === -1) {
+        return 1;
+      }
       const quotient = Math.floor(this.total / this.currentPerPage);
       const remainder = this.total % this.currentPerPage;
 
       return remainder === 0 ? quotient : quotient + 1;
+    },
+
+    // Can go to first page
+    firstIsPossible() {
+      return this.currentPage > 1;
+    },
+
+    // Can go to last page
+    lastIsPossible() {
+      return this.currentPage < Math.ceil(this.total / this.currentPerPage);
     },
 
     // Can go to next page
@@ -2565,6 +2599,24 @@ const _sfc_main$5 = {
         this.prevPage = this.currentPage;
         this.currentPage = pageNumber;
         this.pageChanged(emit);
+      }
+    },
+
+    // Go to first page
+    firstPage() {
+      if (this.firstIsPossible) {
+        this.currentPage = 1;
+        this.prevPage = 0;
+        this.pageChanged();
+      }
+    },
+
+    // Go to last page
+    lastPage() {
+      if (this.lastIsPossible) {
+        this.currentPage = this.pagesCount;
+        this.prev = this.currentPage - 1;
+        this.pageChanged();
       }
     },
 
@@ -2706,30 +2758,60 @@ function _sfc_render$5(_ctx, _cache, $props, $setup, $data, $options) {
         "info-fn": $props.infoFn,
         mode: $props.mode
       }, null, 8 /* PROPS */, ["onPageChanged", "total-records", "last-page", "current-page", "current-per-page", "of-text", "page-text", "info-fn", "mode"]),
+      ($props.jumpFirstOrLast)
+        ? (vue.openBlock(), vue.createElementBlock("button", {
+            key: 0,
+            type: "button",
+            "aria-controls": "vgt-table",
+            class: vue.normalizeClass(["footer__navigation__page-btn", { disabled: !$options.firstIsPossible }]),
+            onClick: _cache[2] || (_cache[2] = vue.withModifiers((...args) => ($options.firstPage && $options.firstPage(...args)), ["prevent","stop"]))
+          }, [
+            _cache[6] || (_cache[6] = vue.createElementVNode("span", {
+              "aria-hidden": "true",
+              class: "chevron start"
+            }, null, -1 /* HOISTED */)),
+            vue.createElementVNode("span", null, vue.toDisplayString($props.firstText), 1 /* TEXT */)
+          ], 2 /* CLASS */))
+        : vue.createCommentVNode("v-if", true),
       vue.createElementVNode("button", {
         type: "button",
         "aria-controls": "vgt-table",
         class: vue.normalizeClass(["footer__navigation__page-btn", { disabled: !$options.prevIsPossible }]),
-        onClick: _cache[2] || (_cache[2] = vue.withModifiers((...args) => ($options.previousPage && $options.previousPage(...args)), ["prevent","stop"]))
+        onClick: _cache[3] || (_cache[3] = vue.withModifiers((...args) => ($options.previousPage && $options.previousPage(...args)), ["prevent","stop"]))
       }, [
-        vue.createElementVNode("span", {
+        _cache[7] || (_cache[7] = vue.createElementVNode("span", {
           "aria-hidden": "true",
-          class: vue.normalizeClass(["chevron", { 'left': !$props.rtl, 'right': $props.rtl }])
-        }, null, 2 /* CLASS */),
+          class: "chevron start"
+        }, null, -1 /* HOISTED */)),
         vue.createElementVNode("span", null, vue.toDisplayString($props.prevText), 1 /* TEXT */)
       ], 2 /* CLASS */),
       vue.createElementVNode("button", {
         type: "button",
         "aria-controls": "vgt-table",
         class: vue.normalizeClass(["footer__navigation__page-btn", { disabled: !$options.nextIsPossible }]),
-        onClick: _cache[3] || (_cache[3] = vue.withModifiers((...args) => ($options.nextPage && $options.nextPage(...args)), ["prevent","stop"]))
+        onClick: _cache[4] || (_cache[4] = vue.withModifiers((...args) => ($options.nextPage && $options.nextPage(...args)), ["prevent","stop"]))
       }, [
         vue.createElementVNode("span", null, vue.toDisplayString($props.nextText), 1 /* TEXT */),
-        vue.createElementVNode("span", {
+        _cache[8] || (_cache[8] = vue.createElementVNode("span", {
           "aria-hidden": "true",
-          class: vue.normalizeClass(["chevron", { 'right': !$props.rtl, 'left': $props.rtl }])
-        }, null, 2 /* CLASS */)
-      ], 2 /* CLASS */)
+          class: "chevron end"
+        }, null, -1 /* HOISTED */))
+      ], 2 /* CLASS */),
+      ($props.jumpFirstOrLast)
+        ? (vue.openBlock(), vue.createElementBlock("button", {
+            key: 1,
+            type: "button",
+            "aria-controls": "vgt-table",
+            class: vue.normalizeClass(["footer__navigation__page-btn", { disabled: !$options.lastIsPossible }]),
+            onClick: _cache[5] || (_cache[5] = vue.withModifiers((...args) => ($options.lastPage && $options.lastPage(...args)), ["prevent","stop"]))
+          }, [
+            vue.createElementVNode("span", null, vue.toDisplayString($props.lastText), 1 /* TEXT */),
+            _cache[9] || (_cache[9] = vue.createElementVNode("span", {
+              "aria-hidden": "true",
+              class: "chevron end"
+            }, null, -1 /* HOISTED */))
+          ], 2 /* CLASS */))
+        : vue.createCommentVNode("v-if", true)
     ])
   ]))
 }
@@ -2737,27 +2819,19 @@ var VgtPagination = /*#__PURE__*/_export_sfc(_sfc_main$5, [['render',_sfc_render
 
 const _sfc_main$4 = {
   name: 'VgtGlobalSearch',
-  props: [
-    'value',
-    'searchEnabled',
-    'globalSearchPlaceholder',
-  ],
-  emits: [
-    'input',
-    'keyup',
-    'enter',
-  ],
+  props: ['value', 'searchEnabled', 'globalSearchPlaceholder'],
+  emits: ['input', 'keyup', 'enter'],
   data() {
     return {
       globalSearchTerm: null,
       id: this.getId(),
-    };
+    }
   },
   computed: {
     showControlBar() {
-      if (this.searchEnabled) return true;
-      if (this.$slots && this.$slots['internal-table-actions']) return true;
-      return false;
+      if (this.searchEnabled) return true
+      if (this.$slots && this.$slots['internal-table-actions']) return true
+      return false
     },
   },
   methods: {
@@ -2769,7 +2843,7 @@ const _sfc_main$4 = {
       this.$emit('enter', value);
     },
     getId() {
-      return `vgt-search-${Math.floor(Math.random() * Date.now())}`;
+      return `vgt-search-${Math.floor(Math.random() * Date.now())}`
     },
   },
 };
@@ -2778,7 +2852,7 @@ const _hoisted_1$4 = {
   key: 0,
   class: "vgt-global-search vgt-clearfix"
 };
-const _hoisted_2$4 = { class: "vgt-global-search__input vgt-pull-left" };
+const _hoisted_2$4 = { class: "vgt-global-search__input vgt-pull-start" };
 const _hoisted_3$4 = ["for"];
 const _hoisted_4$4 = ["id", "placeholder", "value"];
 const _hoisted_5$4 = { class: "vgt-global-search__actions vgt-pull-right" };
@@ -2805,7 +2879,7 @@ function _sfc_render$4(_ctx, _cache, $props, $setup, $data, $options) {
                 vue.createElementVNode("input", {
                   id: $data.id,
                   type: "text",
-                  class: "vgt-input vgt-pull-left",
+                  class: "vgt-input vgt-pull-start",
                   placeholder: $props.globalSearchPlaceholder,
                   value: $props.value,
                   onInput: _cache[0] || (_cache[0] = $event => ($options.updateValue($event.target.value))),
@@ -2847,10 +2921,9 @@ const _sfc_main$3 = {
     return {
       columnFilters: {},
       timer: null,
-    };
+    }
   },
   computed: {
-
     // to create a filter row, we need to
     // make sure that there is atleast 1 column
     // that requires filtering
@@ -2859,20 +2932,19 @@ const _sfc_main$3 = {
       for (let i = 0; i < this.columns.length; i++) {
         const col = this.columns[i];
         if (col.filterOptions && col.filterOptions.enabled) {
-          return true;
+          return true
         }
       }
       // }
-      return false;
+      return false
     },
   },
   methods: {
-
     fieldKey(field) {
-      if (typeof(field) === 'function' && field.name) {
-        return field.name;
+      if (typeof field === 'function' && field.name) {
+        return field.name
       }
-      return field;
+      return field
     },
 
     reset(emitEvent = false) {
@@ -2884,39 +2956,48 @@ const _sfc_main$3 = {
     },
 
     isFilterable(column) {
-      return column.filterOptions
-        && column.filterOptions.enabled;
+      return column.filterOptions && column.filterOptions.enabled
     },
 
     isDropdown(column) {
-      return this.isFilterable(column)
-        && column.filterOptions.filterDropdownItems
-        && column.filterOptions.filterDropdownItems.length;
+      return (
+        this.isFilterable(column) &&
+        column.filterOptions.filterDropdownItems &&
+        column.filterOptions.filterDropdownItems.length
+      )
     },
 
     isDropdownObjects(column) {
-      return this.isDropdown(column)
-        && typeof column.filterOptions.filterDropdownItems[0] === 'object';
+      return (
+        this.isDropdown(column) &&
+        typeof column.filterOptions.filterDropdownItems[0] === 'object'
+      )
     },
 
     isDropdownArray(column) {
-      return this.isDropdown(column)
-        && typeof column.filterOptions.filterDropdownItems[0] !== 'object';
+      return (
+        this.isDropdown(column) &&
+        typeof column.filterOptions.filterDropdownItems[0] !== 'object'
+      )
     },
 
     getClasses(column) {
       const firstClass = 'filter-th';
-      return (column.filterOptions && column.filterOptions.styleClass) ? [firstClass, ...column.filterOptions.styleClass.split(' ')].join(' ') : firstClass;
+      return column.filterOptions && column.filterOptions.styleClass
+        ? [firstClass, ...column.filterOptions.styleClass.split(' ')].join(' ')
+        : firstClass
     },
 
     // get column's defined placeholder or default one
     getPlaceholder(column) {
-      const placeholder = (this.isFilterable(column) && column.filterOptions.placeholder) || `Filter ${column.label}`;
-      return placeholder;
+      const placeholder =
+        (this.isFilterable(column) && column.filterOptions.placeholder) ||
+        `Filter ${column.label}`;
+      return placeholder
     },
 
     getName(column) {
-      return `vgt-${this.fieldKey(column.field)}`;
+      return `vgt-${this.fieldKey(column.field)}`
     },
 
     updateFiltersOnEnter(column, value) {
@@ -2926,7 +3007,7 @@ const _sfc_main$3 = {
 
     updateFiltersOnKeyup(column, value) {
       // if the trigger is enter, we don't filter on keyup
-      if (column.filterOptions.trigger === 'enter') return;
+      if (column.filterOptions.trigger === 'enter') return
       this.updateFilters(column, value);
     },
 
@@ -2957,10 +3038,13 @@ const _sfc_main$3 = {
         const col = this.columns[i];
         // lets see if there are initial
         // filters supplied by user
-        if (this.isFilterable(col)
-          && typeof col.filterOptions.filterValue !== 'undefined'
-          && col.filterOptions.filterValue !== null) {
-          this.columnFilters[this.fieldKey(col.field)] = col.filterOptions.filterValue;
+        if (
+          this.isFilterable(col) &&
+          typeof col.filterOptions.filterValue !== 'undefined' &&
+          col.filterOptions.filterValue !== null
+        ) {
+          this.columnFilters[this.fieldKey(col.field)] =
+            col.filterOptions.filterValue;
           // this.updateFilters(col, col.filterOptions.filterValue);
           // this.$set(col.filterOptions, 'filterValue', undefined);
         }
@@ -2978,7 +3062,7 @@ const _hoisted_4$3 = { key: 2 };
 const _hoisted_5$3 = { key: 0 };
 const _hoisted_6$3 = ["name", "placeholder", "value", "onKeyup", "onInput"];
 const _hoisted_7$3 = ["name", "value", "onChange"];
-const _hoisted_8$2 = {
+const _hoisted_8$3 = {
   value: "",
   key: "-1"
 };
@@ -3034,9 +3118,11 @@ function _sfc_render$3(_ctx, _cache, $props, $setup, $data, $options) {
                                 name: $options.getName(column),
                                 class: "vgt-select",
                                 value: $data.columnFilters[$options.fieldKey(column.field)],
-                                onChange: $event => ($options.updateFiltersImmediately(column.field, $event.target.value))
+                                onChange: $event => (
+                $options.updateFiltersImmediately(column.field, $event.target.value)
+              )
                               }, [
-                                vue.createElementVNode("option", _hoisted_8$2, vue.toDisplayString($options.getPlaceholder(column)), 1 /* TEXT */),
+                                vue.createElementVNode("option", _hoisted_8$3, vue.toDisplayString($options.getPlaceholder(column)), 1 /* TEXT */),
                                 (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList(column.filterOptions.filterDropdownItems, (option, i) => {
                                   return (vue.openBlock(), vue.createElementBlock("option", {
                                     key: i,
@@ -3052,7 +3138,9 @@ function _sfc_render$3(_ctx, _cache, $props, $setup, $data, $options) {
                                 name: $options.getName(column),
                                 class: "vgt-select",
                                 value: $data.columnFilters[$options.fieldKey(column.field)],
-                                onChange: $event => ($options.updateFiltersImmediately(column.field, $event.target.value))
+                                onChange: $event => (
+                $options.updateFiltersImmediately(column.field, $event.target.value)
+              )
                               }, [
                                 vue.createElementVNode("option", _hoisted_11$1, vue.toDisplayString($options.getPlaceholder(column)), 1 /* TEXT */),
                                 (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList(column.filterOptions.filterDropdownItems, (option, i) => {
@@ -3231,15 +3319,42 @@ const _sfc_main$2 = {
   computed: {
 
   },
-  methods: {
+    methods: {
+      //resize
+    startResize(event,index) {
+      this.resizing = true;
+      this.resizeIndex = index;
+      this.startX = event.pageX;
+      document.addEventListener('mousemove', this.handleResize);
+      document.addEventListener('mouseup', this.stopResize);
+    },
+    handleResize(event) {
+      if (this.resizing) {
+        const delta =( event.pageX - this.startX)*-1; //rtl -1;
+        if (!delta) return;
+        this.$emit("drag", this.resizeIndex, delta, event.target.parentNode.offsetWidth );
+        this.startX = event.pageX;
+      }
+    },
+    stopResize() {
+      if (this.resizing) {
+        this.resizing = false;
+        document.removeEventListener('mousemove', this.handleResize);
+        document.removeEventListener('mouseup', this.stopResize);
+      }
+    } ,
+
+
+
+
     reset() {
       this.$refs['filter-row'].reset(true);
     },
     toggleExpandRowsAll() {
       this.$emit('toggle-expand-rows-all');
     },
-    toggleSelectAll() {
-      this.$emit('toggle-select-all');
+    toggleSelectAll(e) {
+      this.$emit('toggle-select-all',{revert:  !!e.button });
     },
     isSortableColumn(column) {
       const { sortable } = column;
@@ -3390,6 +3505,7 @@ const _hoisted_4$2 = {
 const _hoisted_5$2 = ["title", "aria-sort", "aria-controls"];
 const _hoisted_6$2 = ["onClick"];
 const _hoisted_7$2 = { class: "sr-only" };
+const _hoisted_8$2 = ["onDblclick", "onMousedown"];
 
 function _sfc_render$2(_ctx, _cache, $props, $setup, $data, $options) {
   const _component_vgt_filter_row = vue.resolveComponent("vgt-filter-row");
@@ -3405,7 +3521,8 @@ function _sfc_render$2(_ctx, _cache, $props, $setup, $data, $options) {
               type: "checkbox",
               checked: $props.allSelected,
               ".indeterminate": $props.allSelectedIndeterminate,
-              onChange: _cache[0] || (_cache[0] = (...args) => ($options.toggleSelectAll && $options.toggleSelectAll(...args)))
+              onChange: _cache[0] || (_cache[0] = (...args) => ($options.toggleSelectAll && $options.toggleSelectAll(...args))),
+              onContextmenu: _cache[1] || (_cache[1] = vue.withModifiers((...args) => ($options.toggleSelectAll && $options.toggleSelectAll(...args)), ["right","prevent","stop"]))
             }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_3$2)
           ]))
         : vue.createCommentVNode("v-if", true),
@@ -3413,7 +3530,7 @@ function _sfc_render$2(_ctx, _cache, $props, $setup, $data, $options) {
         ? (vue.openBlock(), vue.createElementBlock("th", _hoisted_4$2, [
             vue.createElementVNode("a", {
               href: "",
-              onClick: _cache[1] || (_cache[1] = vue.withModifiers((...args) => ($options.toggleExpandRowsAll && $options.toggleExpandRowsAll(...args)), ["prevent"])),
+              onClick: _cache[2] || (_cache[2] = vue.withModifiers((...args) => ($options.toggleExpandRowsAll && $options.toggleExpandRowsAll(...args)), ["prevent"])),
               class: "vgt-wrap__expander"
             }, " (+) ")
           ]))
@@ -3440,7 +3557,12 @@ function _sfc_render$2(_ctx, _cache, $props, $setup, $data, $options) {
                     }, [
                       vue.createElementVNode("span", _hoisted_7$2, " Sort table by " + vue.toDisplayString(column.label) + " in " + vue.toDisplayString($options.getColumnSortLong(column)) + " order ", 1 /* TEXT */)
                     ], 8 /* PROPS */, _hoisted_6$2))
-                  : vue.createCommentVNode("v-if", true)
+                  : vue.createCommentVNode("v-if", true),
+                vue.createElementVNode("span", {
+                  class: "drag",
+                  onDblclick: $event => (_ctx.$emit('resetResize',index)),
+                  onMousedown: $event => ($options.startResize($event,index))
+                }, " ", 40 /* PROPS, NEED_HYDRATION */, _hoisted_8$2)
               ], 14 /* CLASS, STYLE, PROPS */, _hoisted_5$2))
             : vue.createCommentVNode("v-if", true)
         ], 64 /* STABLE_FRAGMENT */))
@@ -3485,7 +3607,7 @@ const _sfc_main$1 = {
       type: Boolean,
     },
     selectAllByGroup: {
-      type: Boolean
+      type: Boolean,
     },
     collapsable: {
       type: [Boolean, Number],
@@ -3504,41 +3626,39 @@ const _sfc_main$1 = {
       type: Number,
     },
     groupIndex: {
-      type: Number
+      type: Number,
     },
   },
-  emits: [
-    'vgtExpand',
-    'select-group-change',
-  ],
+  emits: ['vgtExpand', 'select-group-change'],
   data() {
-    return {
-    };
+    return {}
   },
   computed: {
     allSelected() {
       const { headerRow } = this;
-      return headerRow.children.filter((row) => row.vgtSelected).length === headerRow.children.length;
-    }
+      return (
+        headerRow.children.filter(row => row.vgtSelected).length ===
+        headerRow.children.length
+      )
+    },
   },
   methods: {
     columnCollapsable(currentIndex) {
       if (this.collapsable === true) {
-        return currentIndex === 0;
+        return currentIndex === 0
       }
-      return currentIndex === this.collapsable;
+      return currentIndex === this.collapsable
     },
     toggleSelectGroup(event) {
       this.$emit('select-group-change', {
-        groupIndex: this.groupIndex, checked: event.target.checked
+        groupIndex: this.groupIndex,
+        checked: event.target.checked,
       });
-    }
+    },
   },
 
-  mounted() {
-  },
-  components: {
-  },
+  mounted() {},
+  components: {},
 };
 
 const _hoisted_1$1 = ["colspan"];
@@ -3585,7 +3705,7 @@ function _sfc_render$1(_ctx, _cache, $props, $setup, $data, $options) {
             ($props.collapsable)
               ? (vue.openBlock(), vue.createElementBlock("span", {
                   key: 0,
-                  class: vue.normalizeClass(["triangle", { 'expand': $props.headerRow.vgtIsExpanded }])
+                  class: vue.normalizeClass(["triangle", { expand: $props.headerRow.vgtIsExpanded }])
                 }, null, 2 /* CLASS */))
               : vue.createCommentVNode("v-if", true),
             vue.renderSlot(_ctx.$slots, "table-header-row", { row: $props.headerRow }, () => [
@@ -3626,12 +3746,12 @@ function _sfc_render$1(_ctx, _cache, $props, $setup, $data, $options) {
           ? (vue.openBlock(), vue.createElementBlock("th", {
               key: 0,
               class: vue.normalizeClass(["vgt-row-header", $props.getClasses(i, 'td')]),
-              onClick: $event => ($options.columnCollapsable(i) ? _ctx.$emit('vgtExpand', !$props.headerRow.vgtIsExpanded) : () => {})
+              onClick: $event => ( $options.columnCollapsable(i)? _ctx.$emit('vgtExpand', !$props.headerRow.vgtIsExpanded): () => {})
             }, [
               ($options.columnCollapsable(i))
                 ? (vue.openBlock(), vue.createElementBlock("span", {
                     key: 0,
-                    class: vue.normalizeClass(["triangle", { 'expand': $props.headerRow.vgtIsExpanded }])
+                    class: vue.normalizeClass(["triangle", { expand: $props.headerRow.vgtIsExpanded }])
                   }, null, 2 /* CLASS */))
                 : vue.createCommentVNode("v-if", true),
               vue.renderSlot(_ctx.$slots, "table-header-row", {
@@ -4128,7 +4248,7 @@ function addLeadingZeros(number, targetLength) {
  *
  * Letters marked by * are not implemented but reserved by Unicode standard.
  */
-var formatters$2 = {
+var formatters$1 = {
   // Year
   y: function y(date, token) {
     // From http://www.unicode.org/reports/tr35/tr35-31/tr35-dates.html#Date_Format_tokens
@@ -4194,7 +4314,6 @@ var formatters$2 = {
     return addLeadingZeros(fractionalSeconds, token.length);
   }
 };
-var formatters$3 = formatters$2;
 
 var dayPeriodEnum = {
   am: 'am',
@@ -4288,7 +4407,7 @@ var formatters = {
         unit: 'year'
       });
     }
-    return formatters$3.y(date, token);
+    return formatters$1.y(date, token);
   },
   // Local week-numbering year
   Y: function Y(date, token, localize, options) {
@@ -4410,7 +4529,7 @@ var formatters = {
     switch (token) {
       case 'M':
       case 'MM':
-        return formatters$3.M(date, token);
+        return formatters$1.M(date, token);
       // 1st, 2nd, ..., 12th
       case 'Mo':
         return localize.ordinalNumber(month + 1, {
@@ -4500,7 +4619,7 @@ var formatters = {
         unit: 'date'
       });
     }
-    return formatters$3.d(date, token);
+    return formatters$1.d(date, token);
   },
   // Day of year
   D: function D(date, token, localize) {
@@ -4780,7 +4899,7 @@ var formatters = {
         unit: 'hour'
       });
     }
-    return formatters$3.h(date, token);
+    return formatters$1.h(date, token);
   },
   // Hour [0-23]
   H: function H(date, token, localize) {
@@ -4789,7 +4908,7 @@ var formatters = {
         unit: 'hour'
       });
     }
-    return formatters$3.H(date, token);
+    return formatters$1.H(date, token);
   },
   // Hour [0-11]
   K: function K(date, token, localize) {
@@ -4819,7 +4938,7 @@ var formatters = {
         unit: 'minute'
       });
     }
-    return formatters$3.m(date, token);
+    return formatters$1.m(date, token);
   },
   // Second
   s: function s(date, token, localize) {
@@ -4828,11 +4947,11 @@ var formatters = {
         unit: 'second'
       });
     }
-    return formatters$3.s(date, token);
+    return formatters$1.s(date, token);
   },
   // Fraction of second
   S: function S(date, token) {
-    return formatters$3.S(date, token);
+    return formatters$1.S(date, token);
   },
   // Timezone (ISO-8601. If offset is 0, output is always `'Z'`)
   X: function X(date, token, _localize, options) {
@@ -4942,7 +5061,7 @@ function formatTimezoneShort(offset, dirtyDelimiter) {
   if (minutes === 0) {
     return sign + String(hours);
   }
-  var delimiter = dirtyDelimiter || '';
+  var delimiter = dirtyDelimiter;
   return sign + String(hours) + delimiter + addLeadingZeros(minutes, 2);
 }
 function formatTimezoneWithOptionalMinutes(offset, dirtyDelimiter) {
@@ -4960,7 +5079,6 @@ function formatTimezone(offset, dirtyDelimiter) {
   var minutes = addLeadingZeros(absOffset % 60, 2);
   return sign + hours + delimiter + minutes;
 }
-var formatters$1 = formatters;
 
 var dateLongFormatter = function dateLongFormatter(pattern, formatLong) {
   switch (pattern) {
@@ -5041,7 +5159,6 @@ var longFormatters = {
   p: timeLongFormatter,
   P: dateTimeLongFormatter
 };
-var longFormatters$1 = longFormatters;
 
 var protectedDayOfYearTokens = ['D', 'DD'];
 var protectedWeekYearTokens = ['YY', 'YYYY'];
@@ -5145,7 +5262,6 @@ var formatDistance = function formatDistance(token, count, options) {
   }
   return result;
 };
-var formatDistance$1 = formatDistance;
 
 function buildFormatLongFn(args) {
   return function () {
@@ -5189,7 +5305,6 @@ var formatLong = {
     defaultWidth: 'full'
   })
 };
-var formatLong$1 = formatLong;
 
 var formatRelativeLocale = {
   lastWeek: "'last' eeee 'at' p",
@@ -5202,7 +5317,6 @@ var formatRelativeLocale = {
 var formatRelative = function formatRelative(token, _date, _baseDate, _options) {
   return formatRelativeLocale[token];
 };
-var formatRelative$1 = formatRelative;
 
 function buildLocalizeFn(args) {
   return function (dirtyIndex, options) {
@@ -5364,7 +5478,6 @@ var localize = {
     defaultFormattingWidth: 'wide'
   })
 };
-var localize$1 = localize;
 
 function buildMatchFn(args) {
   return function (string) {
@@ -5522,7 +5635,6 @@ var match = {
     defaultParseWidth: 'any'
   })
 };
-var match$1 = match;
 
 /**
  * @type {Locale}
@@ -5535,17 +5647,16 @@ var match$1 = match;
  */
 var locale = {
   code: 'en-US',
-  formatDistance: formatDistance$1,
-  formatLong: formatLong$1,
-  formatRelative: formatRelative$1,
-  localize: localize$1,
-  match: match$1,
+  formatDistance: formatDistance,
+  formatLong: formatLong,
+  formatRelative: formatRelative,
+  localize: localize,
+  match: match,
   options: {
     weekStartsOn: 0 /* Sunday */,
     firstWeekContainsDate: 1
   }
 };
-var defaultLocale = locale;
 
 // - [yYQqMLwIdDecihHKkms]o matches any available ordinal number token
 //   (one of the certain letters followed by `o`)
@@ -5859,27 +5970,27 @@ var unescapedLatinCharacterRegExp$1 = /[a-zA-Z]/;
  */
 
 function format(dirtyDate, dirtyFormatStr, options) {
-  var _ref, _options$locale, _ref2, _ref3, _ref4, _options$firstWeekCon, _options$locale2, _options$locale2$opti, _defaultOptions$local, _defaultOptions$local2, _ref5, _ref6, _ref7, _options$weekStartsOn, _options$locale3, _options$locale3$opti, _defaultOptions$local3, _defaultOptions$local4;
+  var _ref, _options$locale, _ref2, _ref3, _ref4, _options$firstWeekCon, _defaultOptions$local, _defaultOptions$local2, _ref5, _ref6, _ref7, _options$weekStartsOn, _defaultOptions$local3, _defaultOptions$local4;
   requiredArgs(2, arguments);
   var formatStr = String(dirtyFormatStr);
   var defaultOptions = getDefaultOptions();
-  var locale = (_ref = (_options$locale = options === null || options === void 0 ? void 0 : options.locale) !== null && _options$locale !== void 0 ? _options$locale : defaultOptions.locale) !== null && _ref !== void 0 ? _ref : defaultLocale;
-  var firstWeekContainsDate = toInteger((_ref2 = (_ref3 = (_ref4 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale2 = options.locale) === null || _options$locale2 === void 0 ? void 0 : (_options$locale2$opti = _options$locale2.options) === null || _options$locale2$opti === void 0 ? void 0 : _options$locale2$opti.firstWeekContainsDate) !== null && _ref4 !== void 0 ? _ref4 : defaultOptions.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : (_defaultOptions$local = defaultOptions.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : 1);
+  var locale$1 = (_ref = (_options$locale = void 0 ) !== null && _options$locale !== void 0 ? _options$locale : defaultOptions.locale) !== null && _ref !== void 0 ? _ref : locale;
+  var firstWeekContainsDate = toInteger((_ref2 = (_ref3 = (_ref4 = (_options$firstWeekCon = void 0 ) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : void 0 ) !== null && _ref4 !== void 0 ? _ref4 : defaultOptions.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : (_defaultOptions$local = defaultOptions.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : 1);
 
   // Test if weekStartsOn is between 1 and 7 _and_ is not NaN
   if (!(firstWeekContainsDate >= 1 && firstWeekContainsDate <= 7)) {
     throw new RangeError('firstWeekContainsDate must be between 1 and 7 inclusively');
   }
-  var weekStartsOn = toInteger((_ref5 = (_ref6 = (_ref7 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale3 = options.locale) === null || _options$locale3 === void 0 ? void 0 : (_options$locale3$opti = _options$locale3.options) === null || _options$locale3$opti === void 0 ? void 0 : _options$locale3$opti.weekStartsOn) !== null && _ref7 !== void 0 ? _ref7 : defaultOptions.weekStartsOn) !== null && _ref6 !== void 0 ? _ref6 : (_defaultOptions$local3 = defaultOptions.locale) === null || _defaultOptions$local3 === void 0 ? void 0 : (_defaultOptions$local4 = _defaultOptions$local3.options) === null || _defaultOptions$local4 === void 0 ? void 0 : _defaultOptions$local4.weekStartsOn) !== null && _ref5 !== void 0 ? _ref5 : 0);
+  var weekStartsOn = toInteger((_ref5 = (_ref6 = (_ref7 = (_options$weekStartsOn = void 0 ) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : void 0 ) !== null && _ref7 !== void 0 ? _ref7 : defaultOptions.weekStartsOn) !== null && _ref6 !== void 0 ? _ref6 : (_defaultOptions$local3 = defaultOptions.locale) === null || _defaultOptions$local3 === void 0 ? void 0 : (_defaultOptions$local4 = _defaultOptions$local3.options) === null || _defaultOptions$local4 === void 0 ? void 0 : _defaultOptions$local4.weekStartsOn) !== null && _ref5 !== void 0 ? _ref5 : 0);
 
   // Test if weekStartsOn is between 0 and 6 _and_ is not NaN
   if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
     throw new RangeError('weekStartsOn must be between 0 and 6 inclusively');
   }
-  if (!locale.localize) {
+  if (!locale$1.localize) {
     throw new RangeError('locale must contain localize property');
   }
-  if (!locale.formatLong) {
+  if (!locale$1.formatLong) {
     throw new RangeError('locale must contain formatLong property');
   }
   var originalDate = toDate(dirtyDate);
@@ -5895,14 +6006,14 @@ function format(dirtyDate, dirtyFormatStr, options) {
   var formatterOptions = {
     firstWeekContainsDate: firstWeekContainsDate,
     weekStartsOn: weekStartsOn,
-    locale: locale,
+    locale: locale$1,
     _originalDate: originalDate
   };
   var result = formatStr.match(longFormattingTokensRegExp$1).map(function (substring) {
     var firstCharacter = substring[0];
     if (firstCharacter === 'p' || firstCharacter === 'P') {
-      var longFormatter = longFormatters$1[firstCharacter];
-      return longFormatter(substring, locale.formatLong);
+      var longFormatter = longFormatters[firstCharacter];
+      return longFormatter(substring, locale$1.formatLong);
     }
     return substring;
   }).join('').match(formattingTokensRegExp$1).map(function (substring) {
@@ -5914,15 +6025,15 @@ function format(dirtyDate, dirtyFormatStr, options) {
     if (firstCharacter === "'") {
       return cleanEscapedString$1(substring);
     }
-    var formatter = formatters$1[firstCharacter];
+    var formatter = formatters[firstCharacter];
     if (formatter) {
-      if (!(options !== null && options !== void 0 && options.useAdditionalWeekYearTokens) && isProtectedWeekYearToken(substring)) {
+      if (isProtectedWeekYearToken(substring)) {
         throwProtectedError(substring, dirtyFormatStr, String(dirtyDate));
       }
-      if (!(options !== null && options !== void 0 && options.useAdditionalDayOfYearTokens) && isProtectedDayOfYearToken(substring)) {
+      if (isProtectedDayOfYearToken(substring)) {
         throwProtectedError(substring, dirtyFormatStr, String(dirtyDate));
       }
-      return formatter(utcDate, substring, locale.localize, formatterOptions);
+      return formatter(utcDate, substring, locale$1.localize, formatterOptions);
     }
     if (firstCharacter.match(unescapedLatinCharacterRegExp$1)) {
       throw new RangeError('Format string contains an unescaped latin alphabet character `' + firstCharacter + '`');
@@ -5968,7 +6079,7 @@ function _unsupportedIterableToArray(r, a) {
 function _createForOfIteratorHelper(r, e) {
   var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"];
   if (!t) {
-    if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) {
+    if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e) {
       t && (r = t);
       var _n = 0,
         F = function F() {};
@@ -6099,7 +6210,7 @@ function _defineProperties(e, r) {
   }
 }
 function _createClass(e, r, t) {
-  return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", {
+  return r && _defineProperties(e.prototype, r), Object.defineProperty(e, "prototype", {
     writable: !1
   }), e;
 }
@@ -8553,22 +8664,22 @@ var unescapedLatinCharacterRegExp = /[a-zA-Z]/;
  * //=> Sun Feb 28 2010 00:00:00
  */
 function parse(dirtyDateString, dirtyFormatString, dirtyReferenceDate, options) {
-  var _ref, _options$locale, _ref2, _ref3, _ref4, _options$firstWeekCon, _options$locale2, _options$locale2$opti, _defaultOptions$local, _defaultOptions$local2, _ref5, _ref6, _ref7, _options$weekStartsOn, _options$locale3, _options$locale3$opti, _defaultOptions$local3, _defaultOptions$local4;
+  var _ref, _options$locale, _ref2, _ref3, _ref4, _options$firstWeekCon, _defaultOptions$local, _defaultOptions$local2, _ref5, _ref6, _ref7, _options$weekStartsOn, _defaultOptions$local3, _defaultOptions$local4;
   requiredArgs(3, arguments);
   var dateString = String(dirtyDateString);
   var formatString = String(dirtyFormatString);
   var defaultOptions = getDefaultOptions();
-  var locale = (_ref = (_options$locale = options === null || options === void 0 ? void 0 : options.locale) !== null && _options$locale !== void 0 ? _options$locale : defaultOptions.locale) !== null && _ref !== void 0 ? _ref : defaultLocale;
-  if (!locale.match) {
+  var locale$1 = (_ref = (_options$locale = void 0 ) !== null && _options$locale !== void 0 ? _options$locale : defaultOptions.locale) !== null && _ref !== void 0 ? _ref : locale;
+  if (!locale$1.match) {
     throw new RangeError('locale must contain match property');
   }
-  var firstWeekContainsDate = toInteger((_ref2 = (_ref3 = (_ref4 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale2 = options.locale) === null || _options$locale2 === void 0 ? void 0 : (_options$locale2$opti = _options$locale2.options) === null || _options$locale2$opti === void 0 ? void 0 : _options$locale2$opti.firstWeekContainsDate) !== null && _ref4 !== void 0 ? _ref4 : defaultOptions.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : (_defaultOptions$local = defaultOptions.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : 1);
+  var firstWeekContainsDate = toInteger((_ref2 = (_ref3 = (_ref4 = (_options$firstWeekCon = void 0 ) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : void 0 ) !== null && _ref4 !== void 0 ? _ref4 : defaultOptions.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : (_defaultOptions$local = defaultOptions.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : 1);
 
   // Test if weekStartsOn is between 1 and 7 _and_ is not NaN
   if (!(firstWeekContainsDate >= 1 && firstWeekContainsDate <= 7)) {
     throw new RangeError('firstWeekContainsDate must be between 1 and 7 inclusively');
   }
-  var weekStartsOn = toInteger((_ref5 = (_ref6 = (_ref7 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale3 = options.locale) === null || _options$locale3 === void 0 ? void 0 : (_options$locale3$opti = _options$locale3.options) === null || _options$locale3$opti === void 0 ? void 0 : _options$locale3$opti.weekStartsOn) !== null && _ref7 !== void 0 ? _ref7 : defaultOptions.weekStartsOn) !== null && _ref6 !== void 0 ? _ref6 : (_defaultOptions$local3 = defaultOptions.locale) === null || _defaultOptions$local3 === void 0 ? void 0 : (_defaultOptions$local4 = _defaultOptions$local3.options) === null || _defaultOptions$local4 === void 0 ? void 0 : _defaultOptions$local4.weekStartsOn) !== null && _ref5 !== void 0 ? _ref5 : 0);
+  var weekStartsOn = toInteger((_ref5 = (_ref6 = (_ref7 = (_options$weekStartsOn = void 0 ) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : void 0 ) !== null && _ref7 !== void 0 ? _ref7 : defaultOptions.weekStartsOn) !== null && _ref6 !== void 0 ? _ref6 : (_defaultOptions$local3 = defaultOptions.locale) === null || _defaultOptions$local3 === void 0 ? void 0 : (_defaultOptions$local4 = _defaultOptions$local3.options) === null || _defaultOptions$local4 === void 0 ? void 0 : _defaultOptions$local4.weekStartsOn) !== null && _ref5 !== void 0 ? _ref5 : 0);
 
   // Test if weekStartsOn is between 0 and 6 _and_ is not NaN
   if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
@@ -8584,16 +8695,16 @@ function parse(dirtyDateString, dirtyFormatString, dirtyReferenceDate, options) 
   var subFnOptions = {
     firstWeekContainsDate: firstWeekContainsDate,
     weekStartsOn: weekStartsOn,
-    locale: locale
+    locale: locale$1
   };
 
   // If timezone isn't specified, it will be set to the system timezone
   var setters = [new DateToSystemTimezoneSetter()];
   var tokens = formatString.match(longFormattingTokensRegExp).map(function (substring) {
     var firstCharacter = substring[0];
-    if (firstCharacter in longFormatters$1) {
-      var longFormatter = longFormatters$1[firstCharacter];
-      return longFormatter(substring, locale.formatLong);
+    if (firstCharacter in longFormatters) {
+      var longFormatter = longFormatters[firstCharacter];
+      return longFormatter(substring, locale$1.formatLong);
     }
     return substring;
   }).join('').match(formattingTokensRegExp);
@@ -8627,7 +8738,7 @@ function parse(dirtyDateString, dirtyFormatString, dirtyReferenceDate, options) 
           token: firstCharacter,
           fullToken: token
         });
-        var parseResult = parser.run(dateString, token, locale.match, subFnOptions);
+        var parseResult = parser.run(dateString, token, locale$1.match, subFnOptions);
         if (!parseResult) {
           return {
             v: new Date(NaN)
@@ -8771,7 +8882,7 @@ date.format = function (v, column) {
 
 var date$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  'default': date
+  default: date
 });
 
 const number = Object.assign({}, defaultType);
@@ -8800,7 +8911,7 @@ number.compare = function (x, y) {
 
 var number$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  'default': number
+  default: number
 });
 
 const decimal = Object.assign({}, number);
@@ -8812,7 +8923,7 @@ decimal.format = function (v) {
 
 var decimal$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  'default': decimal
+  default: decimal
 });
 
 const percentage = Object.assign({}, number);
@@ -8824,7 +8935,7 @@ percentage.format = function (v) {
 
 var percentage$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  'default': percentage
+  default: percentage
 });
 
 const boolean = Object.assign({}, defaultType);
@@ -8852,7 +8963,7 @@ boolean.compare = function (x, y) {
 
 var boolean$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  'default': boolean
+  default: boolean
 });
 
 var index$1 = {
@@ -8867,26 +8978,29 @@ const dataTypes = {};
 const coreDataTypes = index$1;
 Object.keys(coreDataTypes).forEach((key) => {
 	const compName = key.replace(/^\.\//, "").replace(/\.js/, "");
-	dataTypes[compName] = coreDataTypes[key].default;
+  dataTypes[compName] = coreDataTypes[key].default;
 });
 
+  function flat(obj) { return JSON.parse(JSON.stringify(obj)) }
+
+
 const _sfc_main = {
-	name: "vue-good-table",
-	props: {
-		isLoading: { default: null, type: Boolean },
-		maxHeight: { default: null, type: String },
-		fixedHeader: Boolean,
+  name: 'vue-good-table',
+  props: {
+    isLoading: { default: null, type: Boolean },
+    maxHeight: { default: null, type: String },
+    fixedHeader: Boolean,
 		theme: { default: "" },
 		mode: { default: "local" }, // could be remote
-		totalRows: {}, // required if mode = 'remote'
+    totalRows: {}, // required if mode = 'remote'
 		styleClass: { default: "vgt-table bordered" },
-		columns: {},
-		rows: {},
-		lineNumbers: Boolean,
-		responsive: { default: true, type: Boolean },
-		rtl: Boolean,
-		rowStyleClass: { default: null, type: [Function, String] },
-		compactMode: Boolean,
+    columns: {},
+    rows: {},
+    lineNumbers: Boolean,
+    responsive: { default: true , type: Boolean },
+    rtl: Boolean,
+    rowStyleClass: { default: null, type: [Function, String] },
+    compactMode: Boolean,
 		enableRowExpand: { default: false, type: Boolean },
 
 		expandRowsOptions: {
@@ -8896,69 +9010,79 @@ const _sfc_main = {
 				};
 			},
 		},
-
-		groupOptions: {
-			default() {
-				return {
-					enabled: false,
-					collapsable: false,
+   
+    groupOptions: {
+      default() {
+        return {
+          enabled: false,
+          collapsable: false,
 					rowKey: null,
-				};
-			},
-		},
+        };
+      },
+    },
 
-		selectOptions: {
-			default() {
-				return {
-					enabled: false,
+    selectOptions: {
+      default() {
+        return {
+          enabled: false,
 					selectionInfoClass: "",
 					selectionText: n => n + ' row' + (n !== 1 ? 's' : '') + ' selected',
 					clearSelectionText: "clear",
-					disableSelectInfo: false,
-					selectAllByGroup: false,
+          disableSelectInfo: false,
+          selectAllByGroup: false,
 					alwaysShowSelectionInfo: false,
-				};
-			},
-		},
+        };
+      },
+    },
 
-		// sort
-		sortOptions: {
-			default() {
-				return {
-					enabled: true,
-					multipleColumns: true,
-					initialSortBy: {},
-				};
-			},
-		},
+    // sort
+    sortOptions: {
+      default() {
+        return {
+          enabled: true,
+          multipleColumns: true,
+          initialSortBy: {},
+        };
+      },
+    },
 
-		// pagination
-		paginationOptions: {
-			default() {
-				return {
-					enabled: false,
+    // pagination
+    paginationOptions: {
+      default() {
+        return {
+          enabled: false,
 					position: "bottom",
-					perPage: 10,
-					perPageDropdown: null,
-					perPageDropdownEnabled: true,
-					dropdownAllowAll: true,
+          perPage: 10,
+          perPageDropdown: null,
+          perPageDropdownEnabled: true,
+          dropdownAllowAll: true,
 					mode: "records", // or pages
-					infoFn: null,
-				};
-			},
-		},
+          infoFn: null,
+          jumpFirstOrLast : false
+        };
+      },
+    },
 
-		searchOptions: {
-			default() {
-				return {
-					enabled: false,
-					trigger: null,
-					externalQuery: null,
-					searchFn: null,
+    virtualPaginationOptions: {
+      default() {
+        return {
+          enabled: false,
+          height: 32
+        }
+      }
+    },
+
+    searchOptions: {
+      default() {
+        return {
+          enabled: false,
+          trigger: null,
+          externalQuery: null,
+          searchFn: null,
 					placeholder: "Search Table",
-				};
-			},
-		},
+        };
+      },
+    },
 
 		expandedRowClasses: {
 			default: "",
@@ -8968,69 +9092,75 @@ const _sfc_main = {
 			default: "",
 			type: String,
 		},
-	},
+  },
 
-	data: () => ({
-		// loading state for remote mode
-		tableLoading: false,
+  data: () => ({
+    // loading state for remote mode
+    tableLoading: false,
 
-		// text options
+    // text options
 		nextText: "Next",
+    lastText: 'Last',
+    firstText: 'First',
 		prevText: "Previous",
 		rowsPerPageText: "Rows per page",
 		ofText: "of",
 		allText: "All",
 		pageText: "page",
 
-		// internal select options
-		selectable: false,
-		selectOnCheckboxOnly: false,
-		selectAllByPage: true,
-		disableSelectInfo: false,
+    // internal select options
+    selectable: false,
+    selectOnCheckboxOnly: false,
+    selectAllByPage: false,
+    disableSelectInfo: false,
 		selectionInfoClass: "",
 		selectionText: n => n + ' row' + (n !== 1 ? 's' : '') + ' selected',
 		clearSelectionText: "clear",
 		alwaysShowSelectionInfo: false,
 
-		// keys for rows that are currently expanded
-		maintainExpanded: true,
-		expandedRowKeys: new Set(),
+    // keys for rows that are currently expanded
+    maintainExpanded: true,
+    expandedRowKeys: new Set(),
 
-		// internal sort options
-		sortable: true,
-		defaultSortBy: null,
-		multipleColumnSort: true,
+    // internal sort options
+    sortable: true,
+    defaultSortBy: null,
+    multipleColumnSort: true,
 
-		// internal search options
-		searchEnabled: false,
-		searchTrigger: null,
-		externalSearchQuery: null,
-		searchFn: null,
+    // internal search options
+    searchEnabled: false,
+    searchTrigger: null,
+    externalSearchQuery: null,
+    searchFn: null,
 		searchPlaceholder: "Search Table",
-		searchSkipDiacritics: false,
+    searchSkipDiacritics: false,
 
-		// internal pagination options
-		perPage: null,
-		paginate: false,
-		paginateOnTop: false,
-		paginateOnBottom: true,
-		customRowsPerPageDropdown: [],
-		paginateDropdownAllowAll: true,
+    // internal pagination options
+    perPage: null,
+    paginate: false,
+    paginateOnTop: false,
+    paginateOnBottom: true,
+    customRowsPerPageDropdown: [],
+    paginateDropdownAllowAll: true,
 		paginationMode: "records",
-		paginationInfoFn: null,
+    paginationInfoFn: null,
 
-		currentPage: 1,
-		currentPerPage: 10,
-		sorts: [],
+    currentPage: 1,
+    currentPerPage: 10,
+    sorts: [],
 		globalSearchTerm: "",
-		filteredRows: [],
-		columnFilters: {},
-		forceSearch: false,
-		sortChanged: false,
-		dataTypes: dataTypes || {},
+    filteredRows: [],
+    columnFilters: {},
+    forceSearch: false,
+    sortChanged: false,
+    dataTypes: dataTypes || {},
 
 		expandedRowIndex: null,
-	}),
+    // virtual pagination
+    scrollTop: 0,
+    scrollHeight: 0,
+    resizeForceHandler: false,
+  }),
 
 	emits: [
 		"select-all",
@@ -9047,35 +9177,36 @@ const _sfc_main = {
 		"row-mouseenter",
 		"row-mouseleave",
 		"column-filter",
+    "drag"
 	],
 
-	watch: {
-		rows: {
-			handler() {
+  watch: {
+    rows: {
+      handler() {
 				this.$emit("update:isLoading", false);
-				this.filterRows(this.columnFilters, false);
-			},
-			deep: true,
-			immediate: true,
-		},
+        this.filterRows(this.columnFilters, false);
+      },
+      deep: true,
+      immediate: true,
+    },
 
-		selectOptions: {
-			handler() {
-				this.initializeSelect();
-			},
-			deep: true,
-			immediate: true,
-		},
+    selectOptions: {
+      handler() {
+        this.initializeSelect();
+      },
+      deep: true,
+      immediate: true,
+    },
 
-		paginationOptions: {
-			handler(newValue, oldValue) {
-				if (!isEqual(newValue, oldValue)) {
-					this.initializePagination();
-				}
-			},
-			deep: true,
-			immediate: true,
-		},
+    paginationOptions: {
+      handler(newValue, oldValue) {
+        if (!isEqual(newValue, oldValue)) {
+          this.initializePagination();
+        }
+      },
+      deep: true,
+      immediate: true,
+    },
 
 		expandRowsOptions: {
 			handler(newValue, oldValue) {
@@ -9085,556 +9216,625 @@ const _sfc_main = {
 			immediate: true,
 		},
 
-		searchOptions: {
-			handler() {
-				if (
-					this.searchOptions.externalQuery !== undefined &&
-					this.searchOptions.externalQuery !== this.searchTerm
-				) {
-					//* we need to set searchTerm to externalQuery first.
-					this.externalSearchQuery = this.searchOptions.externalQuery;
-					this.handleSearch();
-				}
-				this.initializeSearch();
-			},
-			deep: true,
-			immediate: true,
-		},
+    searchOptions: {
+      handler() {
+        if (
+          this.searchOptions.externalQuery !== undefined &&
+          this.searchOptions.externalQuery !== this.searchTerm
+        ) {
+          //* we need to set searchTerm to externalQuery first.
+          this.externalSearchQuery = this.searchOptions.externalQuery;
+          this.handleSearch();
+        }
+        this.initializeSearch();
+      },
+      deep: true,
+      immediate: true,
+    },
 
-		sortOptions: {
-			handler(newValue, oldValue) {
-				if (!isEqual(newValue, oldValue)) {
-					this.initializeSort();
-				}
-			},
-			deep: true,
-		},
+    sortOptions: {
+      handler(newValue, oldValue) {
+        if (!isEqual(newValue, oldValue)) {
+          this.initializeSort();
+        }
+      },
+      deep: true,
+    },
 
-		selectedRows(newValue, oldValue) {
-			if (!isEqual(newValue, oldValue)) {
+    selectedRows(newValue, oldValue) {
+      if (!isEqual(newValue, oldValue)) {
 				this.$emit("selected-rows-change", {
-					selectedRows: this.selectedRows,
-				});
-			}
-		},
-	},
+          selectedRows: this.selectedRows,
+        });
+      }
+    },
+  },
 
-	computed: {
-		tableStyles() {
-			if (this.compactMode) return this.tableStyleClasses + "vgt-compact";
+  computed: {
+    tableStyles() {
+      if (this.compactMode) return this.tableStyleClasses + "vgt-compact";
 			else return this.tableStyleClasses;
-		},
-		hasFooterSlot() {
+    },
+    hasFooterSlot() {
 			return !!this.$slots["table-actions-bottom"];
-		},
-		wrapperStyles() {
-			return {
+    },
+    wrapperStyles() {
+      return {
 				overflow: "scroll-y",
 				maxHeight: this.maxHeight ? this.maxHeight : "auto",
-			};
-		},
+      };
+    },
 
-		rowKeyField() {
+    rowKeyField() {
 			return this.groupOptions.rowKey || "vgt_header_id";
-		},
+    },
 
-		hasHeaderRowTemplate() {
+    hasHeaderRowTemplate() {
 			return !!this.$slots["table-header-row"];
-		},
+    },
 
-		showEmptySlot() {
-			if (!this.paginated.length) return true;
+    showEmptySlot() {
+      if (!this.paginated.length) return true;
 
-			if (
+      if (
 				this.paginated[0].label === "no groups" &&
-				!this.paginated[0].children.length
-			) {
-				return true;
-			}
+        !this.paginated[0].children.length
+      ) {
+        return true;
+      }
 
-			return false;
-		},
+      return false;
+    },
 
-		allSelected() {
-			return (
-				this.selectedRowCount > 0 &&
-				((this.selectAllByPage &&
-					this.selectedPageRowsCount === this.totalPageRowCount) ||
-					(!this.selectAllByPage &&
-						this.selectedRowCount === this.totalRowCount))
-			);
-		},
+    allSelected() {
+      return (
+        this.selectedRowCount > 0 &&
+        ((this.selectAllByPage &&
+          this.selectedPageRowsCount === this.totalPageRowCount) ||
+          (!this.selectAllByPage &&
+            this.selectedRowCount === this.totalRowCount))
+      );
+    },
 
-		allSelectedIndeterminate() {
-			return (
-				!this.allSelected &&
-				((this.selectAllByPage && this.selectedPageRowsCount > 0) ||
-					(!this.selectAllByPage && this.selectedRowCount > 0))
-			);
-		},
+    allSelectedIndeterminate() {
+      return (
+        !this.allSelected &&
+        ((this.selectAllByPage && this.selectedPageRowsCount > 0) ||
+          (!this.selectAllByPage && this.selectedRowCount > 0))
+      );
+    },
 
-		selectionInfo() {
+    selectionInfo() {
 			if (typeof this.selectionText == 'function') {
 				return this.selectionText(this.selectedRowCount);
 			} else {
-				return `${this.selectedRowCount} ${this.selectionText}`;
+      return `${this.selectedRowCount} ${this.selectionText}`;
 			}
-		},
+    },
 
-		selectedRowCount() {
-			return this.selectedRows.length;
-		},
+    selectedRowCount() {
+      return this.selectedRows.length;
+    },
 
-		selectedPageRowsCount() {
-			return this.selectedPageRows.length;
-		},
+    selectedPageRowsCount() {
+      return this.selectedPageRows.length;
+    },
 
-		selectedPageRows() {
-			const selectedRows = [];
-			this.paginated.forEach((headerRow) => {
-				headerRow.children.forEach((row) => {
-					if (row.vgtSelected) {
-						selectedRows.push(row);
-					}
-				});
-			});
-			return selectedRows;
-		},
+    selectedPageRows() {
+      const selectedRows = [];
+      this.paginated.forEach((headerRow) => {
+        headerRow.children.forEach((row) => {
+          if (row.vgtSelected) {
+            selectedRows.push(row);
+          }
+        });
+      });
+      return selectedRows;
+    },
 
-		selectedRows() {
-			const selectedRows = [];
-			this.processedRows.forEach((headerRow) => {
-				headerRow.children.forEach((row) => {
-					if (row.vgtSelected) {
-						selectedRows.push(row);
-					}
-				});
-			});
-			return selectedRows.sort((r1, r2) => r1.originalIndex - r2.originalIndex);
-		},
+    selectedRows() {
+      const selectedRows = [];
+      this.processedRows.forEach((headerRow) => {
+        headerRow.children.forEach((row) => {
+          if (row.vgtSelected) {
+            selectedRows.push(row);
+          }
+        });
+      });
+      return selectedRows.sort((r1, r2) => r1.originalIndex - r2.originalIndex);
+    },
 
-		fullColspan() {
-			let fullColspan = 0;
-			for (let i = 0; i < this.columns.length; i += 1) {
-				if (!this.columns[i].hidden) {
-					fullColspan += 1;
-				}
-			}
-			if (this.lineNumbers) fullColspan++;
-			if (this.selectable) fullColspan++;
+    fullColspan() {
+      let fullColspan = 0;
+      for (let i = 0; i < this.columns.length; i += 1) {
+        if (!this.columns[i].hidden) {
+          fullColspan += 1;
+        }
+      }
+      if (this.lineNumbers) fullColspan++;
+      if (this.selectable) fullColspan++;
 			if (this.expandRowsEnabled) fullColspan++;
-			return fullColspan;
-		},
-		groupHeaderOnTop() {
-			if (
-				this.groupOptions &&
-				this.groupOptions.enabled &&
-				this.groupOptions.headerPosition &&
+      return fullColspan;
+    },
+    groupHeaderOnTop() {
+      if (
+        this.groupOptions &&
+        this.groupOptions.enabled &&
+        this.groupOptions.headerPosition &&
 				this.groupOptions.headerPosition === "bottom"
-			) {
-				return false;
-			}
-			if (this.groupOptions && this.groupOptions.enabled) return true;
+      ) {
+        return false;
+      }
+      if (this.groupOptions && this.groupOptions.enabled) return true;
 
-			// will only get here if groupOptions is false
-			return false;
-		},
-		groupHeaderOnBottom() {
-			if (
-				this.groupOptions &&
-				this.groupOptions.enabled &&
-				this.groupOptions.headerPosition &&
+      // will only get here if groupOptions is false
+      return false;
+    },
+    groupHeaderOnBottom() {
+      if (
+        this.groupOptions &&
+        this.groupOptions.enabled &&
+        this.groupOptions.headerPosition &&
 				this.groupOptions.headerPosition === "bottom"
-			) {
-				return true;
-			}
-			return false;
-		},
-		totalRowCount() {
-			const total = this.processedRows.reduce((total, headerRow) => {
-				const childrenCount = headerRow.children
-					? headerRow.children.length
-					: 0;
-				return total + childrenCount;
-			}, 0);
-			return total;
-		},
-		totalPageRowCount() {
-			const total = this.paginated.reduce((total, headerRow) => {
-				const childrenCount = headerRow.children
-					? headerRow.children.length
-					: 0;
-				return total + childrenCount;
-			}, 0);
-			return total;
-		},
-		wrapStyleClasses() {
+      ) {
+        return true;
+      }
+      return false;
+    },
+    totalRowCount() {
+      const total = this.processedRows.reduce((total, headerRow) => {
+        const childrenCount = headerRow.children ? headerRow.children.length : 0;
+        return total + childrenCount;
+      }, 0);
+      return total;
+    },
+    totalPageRowCount() {
+      const total = this.paginated.reduce((total, headerRow) => {
+        const childrenCount = headerRow.children ? headerRow.children.length : 0;
+        return total + childrenCount;
+      }, 0);
+      return total;
+    },
+    wrapStyleClasses() {
 			let classes = "vgt-wrap";
 			if (this.rtl) classes += " rtl";
-			classes += ` ${this.theme}`;
-			return classes;
-		},
-		tableStyleClasses() {
-			let classes = this.styleClass;
-			classes += ` ${this.theme}`;
-			return classes;
-		},
+      classes += ` ${this.theme}`;
+      return classes;
+    },
+    tableStyleClasses() {
+      let classes = this.styleClass;
+      classes += ` ${this.theme}`;
+      return classes;
+    },
 
-		searchTerm() {
-			return this.externalSearchQuery != null
-				? this.externalSearchQuery
-				: this.globalSearchTerm;
-		},
+    searchTerm() {
+      return this.externalSearchQuery != null
+        ? this.externalSearchQuery
+        : this.globalSearchTerm;
+    },
 
-		//
-		globalSearchAllowed() {
-			if (
-				this.searchEnabled &&
-				!!this.globalSearchTerm &&
+    //
+    globalSearchAllowed() {
+      if (
+        this.searchEnabled &&
+        !!this.globalSearchTerm &&
 				this.searchTrigger !== "enter"
-			) {
-				return true;
-			}
+      ) {
+        return true;
+      }
 
 			if (this.externalSearchQuery != null && this.searchTrigger !== "enter") {
-				return true;
-			}
+        return true;
+      }
 
-			if (this.forceSearch) {
-				this.forceSearch = false;
-				return true;
-			}
+      if (this.forceSearch) {
+        this.forceSearch = false;
+        return true;
+      }
 
-			return false;
-		},
+      return false;
+    },
 
-		// this is done everytime sortColumn
-		// or sort type changes
-		//----------------------------------------
-		processedRows() {
-			// we only process rows when mode is local
-			let computedRows = this.filteredRows;
+    // this is done everytime sortColumn
+    // or sort type changes
+    //----------------------------------------
+    processedRows() {
+      // we only process rows when mode is local
+      let computedRows = this.filteredRows;
 			if (this.mode === "remote") {
-				return computedRows;
-			}
+        return computedRows;
+      }
 
-			// take care of the global filter here also
-			if (this.globalSearchAllowed) {
-				// here also we need to de-construct and then
-				// re-construct the rows.
-				const allRows = [];
-				this.filteredRows.forEach((headerRow) => {
-					allRows.push(...headerRow.children);
-				});
-				const filteredRows = [];
-				allRows.forEach((row) => {
-					for (let i = 0; i < this.columns.length; i += 1) {
-						const col = this.columns[i];
-						// if col does not have search disabled,
-						if (!col.globalSearchDisabled) {
-							// if a search function is provided,
-							// use that for searching, otherwise,
-							// use the default search behavior
-							if (this.searchFn) {
-								const foundMatch = this.searchFn(
-									row,
-									col,
-									this.collectFormatted(row, col),
-									this.searchTerm
-								);
-								if (foundMatch) {
-									filteredRows.push(row);
-									break; // break the loop
-								}
-							} else {
-								// comparison
-								const matched = defaultType.filterPredicate(
-									this.collectFormatted(row, col),
-									this.searchTerm,
-									this.searchSkipDiacritics
-								);
-								if (matched) {
-									filteredRows.push(row);
-									break; // break loop
-								}
-							}
-						}
-					}
-				});
+      // take care of the global filter here also
+      if (this.globalSearchAllowed) {
+        // here also we need to de-construct and then
+        // re-construct the rows.
+        const allRows = [];
+        this.filteredRows.forEach((headerRow) => {
+          allRows.push(...headerRow.children);
+        });
+        const filteredRows = [];
+        allRows.forEach((row) => {
+          for (let i = 0; i < this.columns.length; i += 1) {
+            const col = this.columns[i];
+            // if col does not have search disabled,
+            if (!col.globalSearchDisabled) {
+              // if a search function is provided,
+              // use that for searching, otherwise,
+              // use the default search behavior
+              if (this.searchFn) {
+                const foundMatch = this.searchFn(
+                  row,
+                  col,
+                  this.collectFormatted(row, col),
+                  this.searchTerm
+                );
+                if (foundMatch) {
+                  filteredRows.push(row);
+                  break; // break the loop
+                }
+              } else {
+                // comparison
+                const matched = defaultType.filterPredicate(
+                  this.collectFormatted(row, col),
+                  this.searchTerm,
+                  this.searchSkipDiacritics
+                );
+                if (matched) {
+                  filteredRows.push(row);
+                  break; // break loop
+                }
+              }
+            }
+          }
+        });
 
-				// this is where we emit on search
+        // this is where we emit on search
 				this.$emit("search", {
-					searchTerm: this.searchTerm,
-					rowCount: filteredRows.length,
-				});
+          searchTerm: this.searchTerm,
+          rowCount: filteredRows.length,
+        });
 
-				// here we need to reconstruct the nested structure
-				// of rows
-				computedRows = [];
-				this.filteredRows.forEach((headerRow) => {
-					const i = headerRow.vgt_header_id;
-					const children = filteredRows.filter((r) => r.vgt_id === i);
-					if (children.length) {
-						const newHeaderRow = JSON.parse(JSON.stringify(headerRow));
-						newHeaderRow.children = children;
-						computedRows.push(newHeaderRow);
-					}
-				});
-			}
-			if (this.sorts.length) {
-				//* we need to sort
-				computedRows.forEach((cRows) => {
-					cRows.children.sort((xRow, yRow) => {
-						//* we need to get column for each sort
-						let sortValue;
-						for (let i = 0; i < this.sorts.length; i += 1) {
-							const srt = this.sorts[i];
+        // here we need to reconstruct the nested structure
+        // of rows
+        computedRows = [];
+        this.filteredRows.forEach((headerRow) => {
+          const i = headerRow.vgt_header_id;
+          const children = filteredRows.filter((r) => r.vgt_id === i);
+          if (children.length) {
+            const newHeaderRow = flat(headerRow);
+            newHeaderRow.children = children;
+            computedRows.push(newHeaderRow);
+          }
+        });
+      }
+      if (this.sorts.length) {
+        //* we need to sort
+        computedRows.forEach((cRows) => {
+          cRows.children.sort((xRow, yRow) => {
+            //* we need to get column for each sort
+            let sortValue;
+            for (let i = 0; i < this.sorts.length; i += 1) {
+              const srt = this.sorts[i];
 
-							if (srt.type === SORT_TYPES.None) {
-								//* if no sort, we need to use the original index to sort.
-								sortValue =
-									sortValue || xRow.originalIndex - yRow.originalIndex;
-							} else {
-								const column = this.getColumnForField(srt.field);
-								const xvalue = this.collect(xRow, srt.field);
-								const yvalue = this.collect(yRow, srt.field);
-
-								//* if a custom sort function has been provided we use that
-								const { sortFn } = column;
+              if (srt.type === SORT_TYPES.None) {
+                //* if no sort, we need to use the original index to sort.
+                sortValue = sortValue || (xRow.originalIndex - yRow.originalIndex);
+              } else {
+                const column = this.getColumnForField(srt.field);
+                const xvalue = this.collect(xRow, srt.field);
+                const yvalue = this.collect(yRow, srt.field);
+  
+                //* if a custom sort function has been provided we use that
+                const { sortFn } = column;
 								if (sortFn && typeof sortFn === "function") {
-									sortValue =
-										sortValue ||
-										sortFn(xvalue, yvalue, column, xRow, yRow) *
-											(srt.type === SORT_TYPES.Descending ? -1 : 1);
-								} else {
-									//* else we use our own sort
-									sortValue =
-										sortValue ||
-										column.typeDef.compare(xvalue, yvalue, column) *
-											(srt.type === SORT_TYPES.Descending ? -1 : 1);
-								}
-							}
-						}
-						return sortValue;
-					});
-				});
-			}
+                  sortValue =
+                    sortValue ||
+                    sortFn(xvalue, yvalue, column, xRow, yRow) *
+                      (srt.type === SORT_TYPES.Descending ? -1 : 1);
+                } else {
+                  //* else we use our own sort
+                  sortValue =
+                    sortValue ||
+                    column.typeDef.compare(xvalue, yvalue, column) *
+                      (srt.type === SORT_TYPES.Descending ? -1 : 1);
+                }
+              }
+            }
+            return sortValue;
+          });
+        });
+      }
 
-			// if the filtering is event based, we need to maintain filter
-			// rows
+      // if the filtering is event based, we need to maintain filter
+      // rows
 			if (this.searchTrigger === "enter") {
-				this.filteredRows = computedRows;
-			}
+        this.filteredRows = computedRows;
+      }
 
-			return computedRows;
-		},
+      return computedRows;
+    },
+    paginated2ScrollTop() {
+    //https://codesandbox.io/s/0bdq0?file=/src/components/HelloWorld.vue:2629-2640
+      const max = this.paginated2ScrollHeight;
+      const diff = this.scrollTop % this.virtualPaginationOptions.height;
+      return Math.min(max, this.scrollTop - diff) 
+    },
+    paginated2ScrollHeight() {
+    return (this.rows.length *this.virtualPaginationOptions.height)
+    },
+    paginated2Start() { 
+      if (!this.virtualPaginationOptions.enabled) return 0;
+      return Math.max(0, (this.scrollTop / this.virtualPaginationOptions.height)-1)
+    },
+    paginated2() {
+      if (!this.virtualPaginationOptions.enabled) return this.paginated;
+      let rows = this.filteredRows;
 
-		paginated() {
-			if (!this.processedRows.length) return [];
+      const count = this.scrollHeight / this.virtualPaginationOptions.height + 4 || 30;// = this.$refs.fixedHeader?.offsetHeight || 60;
+      const start = (this.scrollTop / this.virtualPaginationOptions.height)-1;
+      const startfloor = Math.floor(start);
+
+      const end = startfloor + count;
+      return [{ ...rows[0], children: rows[0].children.filter((f, i) => i >= startfloor && i < end) }];// .slice(start, end);
+    },
+    columnsWidth() {
+      if (!this.rows || !this.rows.length) return {};
+
+      const fHTML = (s)=> s.includes("<") ? s.replace(/<[^>]*>/g, "") : s;
+
+      const ret = []; const  columns = this.columns;
+      for (var i = 0; i < this.rows.length; i++) {
+        for (var i2 = 0; i2 < columns.length; i2++) {
+          const col = columns[i2];
+          const currentW = fHTML(String(this.rows[i][col.field])).length;
+          ret[i2] = (ret[i2] || 0) +  currentW;
+        }
+      }
+      this._columnsWidth = flat(ret);
+      // stored width
+      for (var i2 = 0; i2 < columns.length; i2++) {
+        const col = columns[i2];
+        if (col.colWidth) ret[i2] = col.colWidth;
+      }
+      return ret;
+    },
+    columnWidthSum() {
+      const columnsWidth = this.columnsWidth;
+      this.resizeForceHandler;
+      return this.columns.reduce((accumulator, currentValue, i) => accumulator + Math.max(columnsWidth[i], 8), 0);
+    },
+    columnsWidth2() { //calculate the width of the rows in  virtualPagination
+      //if (!this.virtualPaginationOptions.enabled) return [];
+      const columnsWidth = this.columnsWidth;
+      this.resizeForceHandler; //recalculate when needed
+      const cl = this.columns.length;
+      const sum = this.columnWidthSum;
+      const maxPerc = Math.max ((100 / cl)*3,70);
+      const colStyles = [];
+      for (let i = 0; i < cl; i++) {
+        const w = Math.min(Math.max(( columnsWidth[i] / sum) * 100, 8), maxPerc);
+        colStyles.push({
+          width: (w) + "%"
+        });
+      }
+      return colStyles;
+    },
+
+    paginated() {
+      if (!this.processedRows.length) return [];
 
 			if (this.mode === "remote") {
-				return this.processedRows;
-			}
+        return this.processedRows;
+      }
 
-			//* flatten the rows for paging.
-			let paginatedRows = [];
-			this.processedRows.forEach((childRows) => {
-				//* only add headers when group options are enabled.
-				if (this.groupOptions.enabled) {
-					paginatedRows.push(childRows);
-				}
-				paginatedRows.push(...childRows.children);
-			});
+      //* flatten the rows for paging.
+      let paginatedRows = [];
+      this.processedRows.forEach((childRows) => {
+        //* only add headers when group options are enabled.
+        if (this.groupOptions.enabled) {
+          paginatedRows.push(childRows);
+        }
+        paginatedRows.push(...childRows.children);
+      });
 
-			if (this.paginate) {
-				let pageStart = (this.currentPage - 1) * this.currentPerPage;
+      if (this.paginate) {
+        let pageStart = (this.currentPage - 1) * this.currentPerPage;
 
-				// in case of filtering we might be on a page that is
-				// not relevant anymore
-				// also, if setting to all, current page will not be valid
-				if (pageStart >= paginatedRows.length || this.currentPerPage === -1) {
-					this.currentPage = 1;
-					pageStart = 0;
-				}
+        // in case of filtering we might be on a page that is
+        // not relevant anymore
+        // also, if setting to all, current page will not be valid
+        if (pageStart >= paginatedRows.length || this.currentPerPage === -1) {
+          this.currentPage = 1;
+          pageStart = 0;
+        }
 
-				// calculate page end now
-				let pageEnd = paginatedRows.length + 1;
+        // calculate page end now
+        let pageEnd = paginatedRows.length + 1;
 
 				// if the setting is set to 'all'
-				if (this.currentPerPage !== -1) {
-					pageEnd = this.currentPage * this.currentPerPage;
-				}
+        if (this.currentPerPage !== -1) {
+          pageEnd = this.currentPage * this.currentPerPage;
+        }
 
-				paginatedRows = paginatedRows.slice(pageStart, pageEnd);
-			}
-			// reconstruct paginated rows here
-			const reconstructedRows = [];
-			paginatedRows.forEach((flatRow) => {
-				//* header row?
-				if (flatRow.vgt_header_id !== undefined) {
-					this.handleExpanded(flatRow);
-					const newHeaderRow = JSON.parse(JSON.stringify(flatRow));
-					newHeaderRow.children = [];
-					reconstructedRows.push(newHeaderRow);
-				} else {
-					//* child row
-					let hRow = reconstructedRows.find(
-						(r) => r.vgt_header_id === flatRow.vgt_id
-					);
-					if (!hRow) {
-						hRow = this.processedRows.find(
-							(r) => r.vgt_header_id === flatRow.vgt_id
-						);
-						if (hRow) {
-							hRow = JSON.parse(JSON.stringify(hRow));
-							hRow.children = [];
-							reconstructedRows.push(hRow);
-						}
-					}
-					hRow.children.push(flatRow);
-				}
-			});
-			return reconstructedRows;
-		},
+        paginatedRows = paginatedRows.slice(pageStart, pageEnd);
+      }
+      // reconstruct paginated rows here
+      const reconstructedRows = [];
+      paginatedRows.forEach((flatRow) => {
+        //* header row?
+        if (flatRow.vgt_header_id !== undefined) {
+          this.handleExpanded(flatRow);
+          const newHeaderRow = flat(flatRow);
+          newHeaderRow.children = [];
+          reconstructedRows.push(newHeaderRow);
+        } else {
+          //* child row
+          let hRow = reconstructedRows.find(r => r.vgt_header_id === flatRow.vgt_id);
+          if (!hRow) {
+            hRow = this.processedRows.find(r => r.vgt_header_id === flatRow.vgt_id);
+            if (hRow) {
+              hRow = flat(hRow);
+              hRow.children = [];
+              reconstructedRows.push(hRow);
+            }
+          }
+          hRow.children.push(flatRow);
+        }
+      });
+      return reconstructedRows;
+    },
 
-		originalRows() {
-			const rows = JSON.parse(JSON.stringify(this.rows));
-			let nestedRows = [];
-			if (!this.groupOptions.enabled) {
-				nestedRows = this.handleGrouped([
-					{
+    originalRows() {
+      const rows = this.rows && this.rows.length ? flat(this.rows) : [];
+      let nestedRows = [];
+      if (!this.groupOptions.enabled) {
+        nestedRows = this.handleGrouped([
+          {
 						label: "no groups",
-						children: rows,
-					},
-				]);
-			} else {
-				nestedRows = this.handleGrouped(rows);
-			}
-			// we need to preserve the original index of
-			// rows so lets do that
-			let index = 0;
-			nestedRows.forEach((headerRow) => {
-				headerRow.children.forEach((row) => {
-					row.originalIndex = index++;
-				});
-			});
+            children: rows,
+          },
+        ]);
+      } else {
+        nestedRows = this.handleGrouped(rows);
+      }
+      // we need to preserve the original index of
+      // rows so lets do that
+      let index = 0;
+      nestedRows.forEach((headerRow) => {
+        headerRow.children.forEach((row) => {
+          row.originalIndex = index++;
+        });
+      });
 
-			return nestedRows;
-		},
+      return nestedRows;
+    },
 
-		typedColumns() {
-			const columns = this.columns;
-			for (let i = 0; i < this.columns.length; i++) {
-				const column = columns[i];
-				column.typeDef = this.dataTypes[column.type] || defaultType;
-			}
-			return columns;
-		},
+    typedColumns() {
+      const columns = this.columns;
+      for (let i = 0; i < this.columns.length; i++) {
+        const column = columns[i];
+        column.typeDef = this.dataTypes[column.type] || defaultType;
+      }
+      return columns;
+    },
 
-		hasRowClickListener() {
-			return this.$attrs && this.$attrs['onRowClick'];
-		},
-	},
+    hasRowClickListener() {
+			return this?._.vnode?.props['onRowClick'];
+    },
+  },
 
-	methods: {
-		//* we need to check for expanded row state here
-		//* to maintain it when sorting/filtering
-		handleExpanded(headerRow) {
-			if (
-				this.maintainExpanded &&
-				this.expandedRowKeys.has(headerRow[this.rowKeyField])
-			) {
+    methods: {
+      resetResize(index) {
+        this.columnsWidth[index] = this._columnsWidth[index];
+        this.resizeForceHandler = !this.resizeForceHandler;
+        this.$emit("drag", this.columnsWidth);
+      },
+      drag(index, delta, deltaOffsetWidth) {
+    
+        this.columnsWidth[index];
+        //var max = this.$el.offsetWidth;
+        var maxWidth = this.columnWidthSum;
+        var perc = (delta / deltaOffsetWidth);
+        this.columnsWidth[index] += perc * maxWidth;
+        this.resizeForceHandler = !this.resizeForceHandler; //workaround - force render columnsWidth2
+        this.$emit("drag", this.columnsWidth);
+      },
+
+    //* we need to check for expanded row state here
+    //* to maintain it when sorting/filtering
+    handleExpanded(headerRow) {
+      if (this.maintainExpanded &&
+        this.expandedRowKeys.has(headerRow[this.rowKeyField])) {
 				headerRow["vgtIsExpanded"] = true;
-			} else {
+      } else {
 				headerRow["vgtIsExpanded"] = false;
-			}
-		},
-		toggleExpand(id) {
-			const headerRow = this.filteredRows.find(
-				(r) => r[this.rowKeyField] === id
-			);
-			if (headerRow) {
-				headerRow["vgtIsExpanded"] = !headerRow.vgtIsExpanded;
-			}
+      }
+    },
+    toggleExpand(id) {
+      const headerRow = this.filteredRows.find(r => r[this.rowKeyField] === id);
+      if (headerRow) {
+        headerRow.vgtIsExpanded = !headerRow.vgtIsExpanded;
+      }
 			if (this.maintainExpanded && headerRow.vgtIsExpanded) {
-				this.expandedRowKeys.add(headerRow[this.rowKeyField]);
-			} else {
-				this.expandedRowKeys.delete(headerRow[this.rowKeyField]);
-			}
-		},
+        this.expandedRowKeys.add(headerRow[this.rowKeyField]);
+      } else {
+        this.expandedRowKeys.delete(headerRow[this.rowKeyField]);
+      }
+    },
 
-		expandAll() {
-			this.filteredRows.forEach((row) => {
+    expandAll() {
+      this.filteredRows.forEach((row) => {
 				row["vgtIsExpanded"] = true;
-				if (this.maintainExpanded) {
-					this.expandedRowKeys.add(row[this.rowKeyField]);
-				}
-			});
-		},
+        if (this.maintainExpanded) {
+          this.expandedRowKeys.add(row[this.rowKeyField]);
+        }
+      });
+    },
 
-		collapseAll() {
-			this.filteredRows.forEach((row) => {
+    collapseAll() {
+      this.filteredRows.forEach((row) => {
 				row["vgtIsExpanded"] = false;
-				this.expandedRowKeys.clear();
-			});
-		},
+        this.expandedRowKeys.clear();
+      });
+    },
 
-		getColumnForField(field) {
-			for (let i = 0; i < this.typedColumns.length; i += 1) {
-				if (this.typedColumns[i].field === field) return this.typedColumns[i];
-			}
-		},
+    getColumnForField(field) {
+      for (let i = 0; i < this.typedColumns.length; i += 1) {
+        if (this.typedColumns[i].field === field) return this.typedColumns[i];
+      }
+    },
 
-		handleSearch() {
-			this.resetTable();
+    handleSearch() {
+      this.resetTable();
 			// for remote mode, we need to emit search
 			if (this.mode === "remote") {
 				this.$emit("search", {
-					searchTerm: this.searchTerm,
-				});
-			}
-		},
+          searchTerm: this.searchTerm,
+        });
+      }
+    },
 
-		reset() {
-			this.initializeSort();
-			this.changePage(1);
+    reset() {
+      this.initializeSort();
+      this.changePage(1);
 			this.$refs["table-header-primary"].reset(true);
 			if (this.$refs["table-header-secondary"]) {
 				this.$refs["table-header-secondary"].reset(true);
-			}
-		},
+      }
+    },
 
-		emitSelectedRows() {
+    emitSelectedRows() {
 			this.$emit("select-all", {
-				selected: this.selectedRowCount === this.totalRowCount,
-				selectedRows: this.selectedRows,
-			});
-		},
+        selected: this.selectedRowCount === this.totalRowCount,
+        selectedRows: this.selectedRows,
+      });
+    },
 
-		unselectAllInternal(forceAll) {
-			const rows =
-				this.selectAllByPage && !forceAll ? this.paginated : this.filteredRows;
-			rows.forEach((headerRow, i) => {
-				headerRow.children.forEach((row, j) => {
+    unselectAllInternal(forceAll) {
+      const rows =
+        this.selectAllByPage && !forceAll ? this.paginated : this.filteredRows;
+      rows.forEach((headerRow, i) => {
+        headerRow.children.forEach((row, j) => {
 					row["vgtSelected"] = false;
-				});
-			});
-			this.emitSelectedRows();
-		},
+        });
+      });
+      this.emitSelectedRows();
+    },
 
-		toggleSelectAll() {
-			if (this.allSelected) {
-				this.unselectAllInternal();
-				return;
-			}
-			const rows = this.selectAllByPage ? this.paginated : this.filteredRows;
-			rows.forEach((headerRow) => {
-				headerRow.children.forEach((row) => {
-					row["vgtSelected"] = true;
-				});
-			});
-			this.emitSelectedRows();
-		},
+    toggleSelectAll(e) {
+      if (this.allSelected) {
+        this.unselectAllInternal();
+        return;
+      }
+      const rows = this.selectAllByPage ? this.paginated : this.filteredRows;
+      rows.forEach((headerRow) => {
+        headerRow.children.forEach((row) => {
+					row.vgtSelected = e.revert ? !row.vgtSelected : true;
+        });
+      });
+      this.emitSelectedRows();
+    },
 
 		toggleExpandRowsAll() {
 			for (let row of this.rows) {
@@ -9647,88 +9847,88 @@ const _sfc_main = {
 			this.$emit("toggle-expand-rows-all", {});
 		},
 
-		toggleSelectGroup(event, headerRow) {
-			headerRow.children.forEach((row) => {
+    toggleSelectGroup(event, headerRow) {
+      headerRow.children.forEach((row) => {
 				row["vgtSelected"] = event.checked;
-			});
-		},
+      });
+    },
 
-		changePage(value) {
-			const enabled = this.paginate;
+    changePage(value) {
+      const enabled = this.paginate;
 			let { paginationBottom, paginationTop } = this.$refs;
-			if (enabled) {
-				if (this.paginateOnTop && paginationTop) {
+      if (enabled) {
+        if (this.paginateOnTop && paginationTop) {
 					paginationTop.currentPage = value;
-				}
-				if (this.paginateOnBottom && paginationBottom) {
+        }
+        if (this.paginateOnBottom && paginationBottom) {
 					paginationBottom.currentPage = value;
-				}
-				// we also need to set the currentPage
-				// for table.
-				this.currentPage = value;
-			}
-		},
+        }
+        // we also need to set the currentPage
+        // for table.
+        this.currentPage = value;
+      }
+    },
 
-		pageChangedEvent() {
-			return {
-				currentPage: this.currentPage,
-				currentPerPage: this.currentPerPage,
-				total: Math.floor(this.totalRowCount / this.currentPerPage),
-			};
-		},
+    pageChangedEvent() {
+      return {
+        currentPage: this.currentPage,
+        currentPerPage: this.currentPerPage,
+        total: Math.floor(this.totalRowCount / this.currentPerPage),
+      };
+    },
 
-		pageChanged(pagination) {
-			this.currentPage = pagination.currentPage;
-			if (!pagination.noEmit) {
-				const pageChangedEvent = this.pageChangedEvent();
-				pageChangedEvent.prevPage = pagination.prevPage;
+    pageChanged(pagination) {
+      this.currentPage = pagination.currentPage;
+      if (!pagination.noEmit) {
+        const pageChangedEvent = this.pageChangedEvent();
+        pageChangedEvent.prevPage = pagination.prevPage;
 				this.$emit("page-change", pageChangedEvent);
 				if (this.mode === "remote") {
 					this.$emit("update:isLoading", true);
-				}
-			}
-		},
+        }
+      }
+    },
 
-		perPageChanged(pagination) {
-			this.currentPerPage = pagination.currentPerPage;
-			// ensure that both sides of pagination are in agreement
-			// this fixes changes during position = 'both'
+    perPageChanged(pagination) {
+      this.currentPerPage = pagination.currentPerPage;
+      // ensure that both sides of pagination are in agreement
+      // this fixes changes during position = 'both'
 			let paginationPosition = this.paginationOptions.position;
 			if (
 				this.$refs.paginationTop &&
 				(paginationPosition === "top" || paginationPosition === "both")
 			) {
 				this.$refs.paginationTop.currentPerPage = this.currentPerPage;
-			}
+      }
 			if (
 				this.$refs.paginationBottom &&
 				(paginationPosition === "bottom" || paginationPosition === "both")
 			) {
 				this.$refs.paginationBottom.currentPerPage = this.currentPerPage;
-			}
-			//* update perPage also
-			const perPageChangedEvent = this.pageChangedEvent();
+      }
+      //* update perPage also
+      const perPageChangedEvent = this.pageChangedEvent();
 			this.$emit("per-page-change", perPageChangedEvent);
 			if (this.mode === "remote") {
 				this.$emit("update:isLoading", true);
-			}
-		},
+      }
+    },
 
-		changeSort(sorts) {
-			this.sorts = sorts;
+    changeSort(sorts) {
+      this.sorts = sorts;
 			this.$emit("sort-change", sorts);
 
-			// every time we change sort we need to reset to page 1
-			this.changePage(1);
+      // every time we change sort we need to reset to page 1
+      this.changePage(1);
 
-			// if the mode is remote, we don't need to do anything
-			// after this. just set table loading to true
+      // if the mode is remote, we don't need to do anything
+      // after this. just set table loading to true
 			if (this.mode === "remote") {
 				this.$emit("update:isLoading", true);
-				return;
-			}
-			this.sortChanged = true;
-		},
+        return;
+      }
+      this.sortChanged = true;
+    },
 
 		toggleRowExpand(row, index) {
 			if (this.expandedRowIndex === index) {
@@ -9738,427 +9938,440 @@ const _sfc_main = {
 			}
 		},
 
-		// checkbox click should always do the following
-		onCheckboxClicked(row, index, event) {
-			if (this.enableRowExpand) {
-				this.toggleRowExpand(row, index);
-			}
-			row["vgtSelected"] = !row.vgtSelected;
-			this.$emit("row-click", {
-				row,
-				pageIndex: index,
-				selected: !!row.vgtSelected,
-				event,
-			});
-		},
+    // checkbox click should always do the following
+    onCheckboxClicked(row, index, event) {
+
+      const offset = this.paginated2Start;
+      const currentIndex = index + Math.floor( offset);
+      if (event.shiftKey && this.lastIndex > -1) { // support for multiple select with shift
+        const lastI = this.lastIndex;
+        const first = Math.min(lastI, currentIndex), last = Math.max(lastI, currentIndex);
+        for (let i = first; i <= last;i++) this.rows[i].vgtSelected = !row.vgtSelected;
+      }
+      this.lastIndex = currentIndex;
+      row.vgtSelected= !row.vgtSelected;
+      this.$emit('row-click', {
+        row,
+        pageIndex: currentIndex,
+        selected: !!row.vgtSelected,
+        event,
+      });
+    },
 
 		toggleExpandRow(row) {
 			row["expanded"] = !row["expanded"];
 		},
 
-		onRowDoubleClicked(row, index, event) {
+    onRowDoubleClicked(row, index, event) {
 			this.$emit("row-dblclick", {
-				row,
-				pageIndex: index,
-				selected: !!row.vgtSelected,
-				event,
-			});
-		},
+        row,
+        pageIndex: Math.floor(this.paginated2Start) + index,
+        selected: !!row.vgtSelected,
+        event,
+      });
+    },
 
-		onRowClicked(row, index, event) {
+    onRowClicked(row, index, event) {
 			if (this.enableRowExpand) {
 				this.toggleRowExpand(row, index);
 			}
-			if (this.selectable && !this.selectOnCheckboxOnly) {
+      if (this.selectable && !this.selectOnCheckboxOnly) {
 				row["vgtSelected"] = !row.vgtSelected;
-			}
+      }
 			this.$emit("row-click", {
-				row,
-				pageIndex: index,
-				selected: !!row.vgtSelected,
-				event,
-			});
-		},
+        row,
+        pageIndex: Math.floor(this.paginated2Start) + index,
+        selected: !!row.vgtSelected,
+        event,
+      });
+    },
 
-		onRowAuxClicked(row, index, event) {
+    onRowAuxClicked(row, index, event) {
 			this.$emit("row-aux-click", {
-				row,
-				pageIndex: index,
-				selected: !!row.vgtSelected,
-				event,
-			});
-		},
+        row,
+        pageIndex: Math.floor(this.paginated2Start) + index,
+        selected: !!row.vgtSelected,
+        event,
+      });
+    },
 
-		onCellClicked(row, column, rowIndex, event) {
+    onCellClicked(row, column, rowIndex, event) {
 			this.$emit("cell-click", {
-				row,
-				column,
-				rowIndex,
-				event,
-			});
-		},
+        row,
+        column,
+        rowIndex,
+        event,
+      });
+    },
 
-		onMouseenter(row, index) {
+    onMouseenter(row, index) {
 			this.$emit("row-mouseenter", {
-				row,
-				pageIndex: index,
-			});
-		},
+        row,
+        pageIndex:  Math.floor(this.paginated2Start) + index,
+      });
+    },
 
-		onMouseleave(row, index) {
+    onMouseleave(row, index) {
 			this.$emit("row-mouseleave", {
-				row,
-				pageIndex: index,
-			});
-		},
+        row,
+        pageIndex:  Math.floor(this.paginated2Start) + index,
+      });
+    },
 
-		searchTableOnEnter() {
+    searchTableOnEnter() {
 			if (this.searchTrigger === "enter") {
-				this.handleSearch();
-				// we reset the filteredRows here because
-				// we want to search across everything.
-				this.filteredRows = JSON.parse(JSON.stringify(this.originalRows));
-				this.forceSearch = true;
-				this.sortChanged = true;
-			}
-		},
+        this.handleSearch();
+        // we reset the filteredRows here because
+        // we want to search across everything.
+        this.filteredRows = flat(this.originalRows);
+        this.forceSearch = true;
+        this.sortChanged = true;
+      }
+    },
 
-		searchTableOnKeyUp() {
+    searchTableOnKeyUp() {
 			if (this.searchTrigger !== "enter") {
-				this.handleSearch();
-			}
-		},
+        this.handleSearch();
+      }
+    },
 
-		resetTable() {
-			this.unselectAllInternal(true);
-			// every time we searchTable
-			this.changePage(1);
-		},
+    resetTable() {
+      this.unselectAllInternal(true);
+      // every time we searchTable
+      this.changePage(1);
+    },
 
-		// field can be:
-		// 1. function (passed as a string using function.name. For example: 'bound myFunction')
-		// 2. regular property - ex: 'prop'
-		// 3. nested property path - ex: 'nested.prop'
-		collect(obj, field) {
-			// utility function to get nested property
-			function dig(obj, selector) {
-				let result = obj;
+    // field can be:
+    // 1. function (passed as a string using function.name. For example: 'bound myFunction')
+    // 2. regular property - ex: 'prop'
+    // 3. nested property path - ex: 'nested.prop'
+    collect(obj, field) {
+      // utility function to get nested property
+      function dig(obj, selector) {
+        let result = obj;
 				const splitter = selector.split(".");
-				for (let i = 0; i < splitter.length; i++) {
+        for (let i = 0; i < splitter.length; i++) {
 					if (typeof result === "undefined" || result === null) {
-						return undefined;
-					}
-					result = result[splitter[i]];
-				}
-				return result;
-			}
+            return undefined;
+          }
+          result = result[splitter[i]];
+        }
+        return result;
+      }
 
 			if (typeof field === "function") return field(obj);
 			if (typeof field === "string") return dig(obj, field);
-			return undefined;
-		},
+      return undefined;
+    },
 
-		collectFormatted(obj, column, headerRow = false) {
-			let value;
-			if (headerRow && column.headerField) {
-				value = this.collect(obj, column.headerField);
-			} else {
-				value = this.collect(obj, column.field);
-			}
+    collectFormatted(obj, column, headerRow = false) {
+      let value;
+      if (headerRow && column.headerField) {
+        value = this.collect(obj, column.headerField);
+      } else {
+        value = this.collect(obj, column.field);
+      }
 			if (value === undefined) return "";
 
-			// if user has supplied custom formatter,
-			// use that here
+      // if user has supplied custom formatter,
+      // use that here
 			if (column.formatFn && typeof column.formatFn === "function") {
-				return column.formatFn(value, obj);
-			}
+        return column.formatFn(value, obj);
+      }
 
-			// lets format the resultant data
-			let type = column.typeDef;
-			// this will only happen if we try to collect formatted
-			// before types have been initialized. for example: on
-			// load when external query is specified.
-			if (!type) {
-				type = this.dataTypes[column.type] || defaultType;
-			}
+      // lets format the resultant data
+      let type = column.typeDef;
+      // this will only happen if we try to collect formatted
+      // before types have been initialized. for example: on
+      // load when external query is specified.
+      if (!type) {
+        type = this.dataTypes[column.type] || defaultType;
+      }
 
-			let result = type.format(value, column);
-			// we must have some values in compact mode
+      let result = type.format(value, column);
+      // we must have some values in compact mode
 			if (this.compactMode && (result == "" || result == null)) return "-";
-			return result;
-		},
+      return result;
+    },
 
-		formattedRow(row, isHeaderRow = false) {
-			const formattedRow = {};
-			for (let i = 0; i < this.typedColumns.length; i++) {
-				const col = this.typedColumns[i];
-				// what happens if field is
-				if (col.field) {
-					formattedRow[col.field] = this.collectFormatted(
-						row,
-						col,
-						isHeaderRow
-					);
-				}
-			}
-			return formattedRow;
-		},
+    formattedRow(row, isHeaderRow = false) {
+      const formattedRow = {};
+      const tc = this.typedColumns;
+      for (let i = 0; i < tc.length; i++) {
+        const col = tc[i];
+        // what happens if field is
+        if (col.field) {
+          formattedRow[col.field] = this.collectFormatted(
+            row,
+            col,
+            isHeaderRow
+          );
+        }
+      }
+      return formattedRow;
+    },
 
-		// Get classes for the given column index & element.
-		getClasses(index, element, row) {
-			const { typeDef, [`${element}Class`]: custom } = this.typedColumns[index];
-			let { isRight } = typeDef;
-			if (this.rtl) isRight = true;
-
-			const classes = {
-				"vgt-right-align": isRight,
-				"vgt-left-align": !isRight,
-			};
-
-			// for td we need to check if value is
-			// a function.
+    // Get classes for the given column index & element.
+    getClasses(index, element, row) {
+      const { typeDef, [`${element}Class`]: custom } = this.typedColumns[index];
+      const classes = {  };
+      // for td we need to check if value is
+      // a function.
 			if (typeof custom === "function") {
-				classes[custom(row)] = true;
+        classes[custom(row)] = true;
 			} else if (typeof custom === "string") {
-				classes[custom] = true;
-			}
-			return classes;
-		},
+        classes[custom] = true;
+      }
+      return classes;
+    },
 
-		// method to filter rows
-		filterRows(columnFilters, fromFilter = true) {
-			// if (!this.rows.length) return;
-			// this is invoked either as a result of changing filters
-			// or as a result of modifying rows.
-			this.columnFilters = columnFilters;
+    // method to filter rows
+    filterRows(columnFilters, fromFilter = true) {
+      // if (!this.rows.length) return;
+      // this is invoked either as a result of changing filters
+      // or as a result of modifying rows.
+      this.columnFilters = columnFilters;
 			let computedRows = JSON.parse(JSON.stringify(this.originalRows));
-			let instancesOfFiltering = false;
+      let instancesOfFiltering = false;
 
-			// do we have a filter to care about?
-			// if not we don't need to do anything
-			if (this.columnFilters && Object.keys(this.columnFilters).length) {
-				// every time we filter rows, we need to set current page
-				// to 1
-				// if the mode is remote, we only need to reset, if this is
-				// being called from filter, not when rows are changing
+
+      
+      this.calculateTopSize();
+
+
+      // do we have a filter to care about?
+      // if not we don't need to do anything
+      if (this.columnFilters && Object.keys(this.columnFilters).length) {
+        // every time we filter rows, we need to set current page
+        // to 1
+        // if the mode is remote, we only need to reset, if this is
+        // being called from filter, not when rows are changing
 				if (this.mode !== "remote" || fromFilter) {
-					this.changePage(1);
-				}
-				// we need to emit an event and that's that.
-				// but this only needs to be invoked if filter is changing
-				// not when row object is modified.
-				if (fromFilter) {
+          this.changePage(1);
+        }
+        // we need to emit an event and that's that.
+        // but this only needs to be invoked if filter is changing
+        // not when row object is modified.
+        if (fromFilter) {
 					this.$emit("column-filter", {
-						columnFilters: this.columnFilters,
-					});
-				}
+            columnFilters: this.columnFilters,
+          });
+        }
 
-				// if mode is remote, we don't do any filtering here.
+        // if mode is remote, we don't do any filtering here.
 				if (this.mode === "remote") {
-					if (fromFilter) {
+          if (fromFilter) {
 						this.$emit("update:isLoading", true);
-					} else {
-						// if remote filtering has already been taken care of.
-						this.filteredRows = computedRows;
-					}
-					return;
-				}
+          } else {
+            // if remote filtering has already been taken care of.
+            this.filteredRows = computedRows;
+          }
+          return;
+        }
 
-				const fieldKey = (field) => {
+        const fieldKey = (field) => {
 					if (typeof field === "function" && field.name) {
-						return field.name;
-					}
-					return field;
+            return field.name;
+          }
+          return field;
 				};
 
-				for (let i = 0; i < this.typedColumns.length; i++) {
-					const col = this.typedColumns[i];
-					if (this.columnFilters[fieldKey(col.field)]) {
-						instancesOfFiltering = true;
-						computedRows.forEach((headerRow) => {
-							const newChildren = headerRow.children.filter((row) => {
-								// If column has a custom filter, use that.
-								if (
-									col.filterOptions &&
+        for (let i = 0; i < this.typedColumns.length; i++) {
+          const col = this.typedColumns[i];
+          if (this.columnFilters[fieldKey(col.field)]) {
+            instancesOfFiltering = true;
+            computedRows.forEach((headerRow) => {
+              const newChildren = headerRow.children.filter((row) => {
+                // If column has a custom filter, use that.
+                if (
+                  col.filterOptions &&
 									typeof col.filterOptions.filterFn === "function"
-								) {
-									return col.filterOptions.filterFn(
-										this.collect(row, col.field),
-										this.columnFilters[fieldKey(col.field)]
-									);
-								}
+                ) {
+                  return col.filterOptions.filterFn(
+                    this.collect(row, col.field),
+                    this.columnFilters[fieldKey(col.field)]
+                  );
+                }
 
-								// Otherwise Use default filters
-								const { typeDef } = col;
-								return typeDef.filterPredicate(
-									this.collect(row, col.field),
-									this.columnFilters[fieldKey(col.field)],
-									false,
-									col.filterOptions &&
+                // Otherwise Use default filters
+                const { typeDef } = col;
+                return typeDef.filterPredicate(
+                  this.collect(row, col.field),
+                  this.columnFilters[fieldKey(col.field)],
+                  false,
+                  col.filterOptions &&
 										typeof col.filterOptions.filterDropdownItems === "object"
-								);
-							});
-							// should we remove the header?
-							headerRow.children = newChildren;
-						});
-					}
-				}
-			}
+                );
+              });
+              // should we remove the header?
+              headerRow.children = newChildren;
+            });
+          }
+        }
+      }
 
-			if (instancesOfFiltering) {
-				this.filteredRows = computedRows.filter(
-					(h) => h.children && h.children.length
-				);
-			} else {
-				this.filteredRows = computedRows;
-			}
-		},
+      if (instancesOfFiltering) {
+        this.filteredRows = computedRows.filter((h) => h.children && h.children.length);
+      } else {
+        this.filteredRows = computedRows;
+      }
+    },
 
-		getCurrentIndex(rowId) {
-			let index = 0;
-			let found = false;
-			for (let i = 0; i < this.paginated.length; i += 1) {
-				const headerRow = this.paginated[i];
-				const { children } = headerRow;
-				if (children && children.length) {
-					for (let j = 0; j < children.length; j += 1) {
-						const c = children[j];
-						if (c.originalIndex === rowId) {
-							found = true;
-							break;
-						}
-						index += 1;
-					}
-				}
-				if (found) break;
-			}
+    getCurrentIndex(rowId) {
+      let index = 0;
+      let found = false;
+      for (let i = 0; i < this.paginated.length; i += 1) {
+        const headerRow = this.paginated[i];
+        const { children } = headerRow;
+        if (children && children.length) {
+          for (let j = 0; j < children.length; j += 1) {
+            const c = children[j];
+            if (c.originalIndex === rowId) {
+              found = true;
+              break;
+            }
+            index += 1;
+          }
+        }
+        if (found) break;
+      }
 			return (this.currentPage - 1) * this.currentPerPage + index + 1;
-		},
+    },
 
-		getRowStyleClass(row) {
+    getRowStyleClass(row) {
 			let classes = "";
 			if (this.hasRowClickListener) classes += "clickable";
-			let rowStyleClasses;
+      let rowStyleClasses;
 			if (typeof this.rowStyleClass === "function") {
-				rowStyleClasses = this.rowStyleClass(row);
-			} else {
-				rowStyleClasses = this.rowStyleClass;
-			}
-			if (rowStyleClasses) {
-				classes += ` ${rowStyleClasses}`;
-			}
+        rowStyleClasses = this.rowStyleClass(row);
+      } else {
+        rowStyleClasses = this.rowStyleClass;
+      }
+      if (rowStyleClasses) {
+        classes += ` ${rowStyleClasses}`;
+      }
 
 			if (this.expandedRowIndex === row.originalIndex) {
 				classes += ` ${this.expandedRowClasses}`;
 			}
 
-			return classes;
-		},
+      return classes;
+    },
 
-		handleGrouped(originalRows) {
-			originalRows.forEach((headerRow, i) => {
-				headerRow.vgt_header_id = i;
-				if (
-					this.groupOptions.maintainExpanded &&
-					this.expandedRowKeys.has(headerRow[this.groupOptions.rowKey])
-				) {
+    handleGrouped(originalRows) {
+      originalRows.forEach((headerRow, i) => {
+        headerRow.vgt_header_id = i;
+        if (
+          this.groupOptions.maintainExpanded &&
+          this.expandedRowKeys.has(headerRow[this.groupOptions.rowKey])
+        ) {
 					headerRow["vgtIsExpanded"] = true;
-				}
-				headerRow.children.forEach((childRow) => {
-					childRow.vgt_id = i;
-				});
-			});
-			return originalRows;
-		},
+        }
+        headerRow.children.forEach((childRow) => {
+          childRow.vgt_id = i;
+        });
+      });
+      return originalRows;
+    },
 
-		initializePagination() {
-			const {
-				enabled,
-				perPage,
-				position,
-				perPageDropdown,
-				perPageDropdownEnabled,
-				dropdownAllowAll,
-				nextLabel,
-				prevLabel,
-				rowsPerPageLabel,
-				ofLabel,
-				pageLabel,
-				allLabel,
-				setCurrentPage,
-				mode,
-				infoFn,
-			} = this.paginationOptions;
+    initializePagination() {
+      const {
+        enabled,
+        perPage,
+        position,
+        perPageDropdown,
+        perPageDropdownEnabled,
+        dropdownAllowAll,
+        firstLabel,
+        lastLabel,
+        nextLabel,
+        prevLabel,
+        rowsPerPageLabel,
+        ofLabel,
+        pageLabel,
+        allLabel,
+        setCurrentPage,
+        mode,
+        infoFn,
+      } = this.paginationOptions;
 
 			if (typeof enabled === "boolean") {
-				this.paginate = enabled;
-			}
+        this.paginate = enabled;
+      }
 
 			if (typeof perPage === "number") {
-				this.perPage = perPage;
-			}
+        this.perPage = perPage;
+      }
 
 			if (position === "top") {
-				this.paginateOnTop = true; // default is false
-				this.paginateOnBottom = false; // default is true
+        this.paginateOnTop = true; // default is false
+        this.paginateOnBottom = false; // default is true
 			} else if (position === "both") {
-				this.paginateOnTop = true;
-				this.paginateOnBottom = true;
-			}
+        this.paginateOnTop = true;
+        this.paginateOnBottom = true;
+      }
 
-			if (Array.isArray(perPageDropdown) && perPageDropdown.length) {
-				this.customRowsPerPageDropdown = perPageDropdown;
-				if (!this.perPage) {
-					[this.perPage] = perPageDropdown;
-				}
-			}
+      if (Array.isArray(perPageDropdown) && perPageDropdown.length) {
+        this.customRowsPerPageDropdown = perPageDropdown;
+        if (!this.perPage) {
+          [this.perPage] = perPageDropdown;
+        }
+      }
 
 			if (typeof perPageDropdownEnabled === "boolean") {
-				this.perPageDropdownEnabled = perPageDropdownEnabled;
-			}
+        this.perPageDropdownEnabled = perPageDropdownEnabled;
+      }
 
 			if (typeof dropdownAllowAll === "boolean") {
-				this.paginateDropdownAllowAll = dropdownAllowAll;
-			}
+        this.paginateDropdownAllowAll = dropdownAllowAll;
+      }
 
 			if (typeof mode === "string") {
-				this.paginationMode = mode;
-			}
+        this.paginationMode = mode;
+      }
 
-			if (typeof nextLabel === "string") {
-				this.nextText = nextLabel;
-			}
+      if (typeof firstLabel === 'string') {
+        this.firstText = firstLabel;
+      }
+
+      if (typeof lastLabel === 'string') {
+        this.lastText = lastLabel;
+      }
+
+      if (typeof nextLabel === 'string') {
+        this.nextText = nextLabel;
+      }
 
 			if (typeof prevLabel === "string") {
-				this.prevText = prevLabel;
-			}
+        this.prevText = prevLabel;
+      }
 
 			if (typeof rowsPerPageLabel === "string") {
-				this.rowsPerPageText = rowsPerPageLabel;
-			}
+        this.rowsPerPageText = rowsPerPageLabel;
+      }
 
 			if (typeof ofLabel === "string") {
-				this.ofText = ofLabel;
-			}
+        this.ofText = ofLabel;
+      }
 
 			if (typeof pageLabel === "string") {
-				this.pageText = pageLabel;
-			}
+        this.pageText = pageLabel;
+      }
 
 			if (typeof allLabel === "string") {
-				this.allText = allLabel;
-			}
+        this.allText = allLabel;
+      }
 
 			if (typeof setCurrentPage === "number") {
-				setTimeout(() => {
-					this.changePage(setCurrentPage);
-				}, 500);
-			}
+        setTimeout(() => {
+          this.changePage(setCurrentPage);
+        }, 500);
+      }
 
 			if (typeof infoFn === "function") {
-				this.paginationInfoFn = infoFn;
-			}
-		},
+        this.paginationInfoFn = infoFn;
+      }
+    },
 
 		initializeExpandRows() {
 			const { enabled } = this.expandRowsOptions;
@@ -10168,134 +10381,155 @@ const _sfc_main = {
 			}
 		},
 
-		initializeSearch() {
-			const {
-				enabled,
-				trigger,
-				externalQuery,
-				searchFn,
-				placeholder,
-				skipDiacritics,
-			} = this.searchOptions;
+    initializeSearch() {
+      const {
+        enabled,
+        trigger,
+        externalQuery,
+        searchFn,
+        placeholder,
+        skipDiacritics,
+      } = this.searchOptions;
 
 			if (typeof enabled === "boolean") {
-				this.searchEnabled = enabled;
-			}
+        this.searchEnabled = enabled;
+      }
 
 			if (trigger === "enter") {
-				this.searchTrigger = trigger;
-			}
+        this.searchTrigger = trigger;
+      }
 
 			if (typeof externalQuery === "string") {
-				this.externalSearchQuery = externalQuery;
-			}
+        this.externalSearchQuery = externalQuery;
+      }
 
 			if (typeof searchFn === "function") {
-				this.searchFn = searchFn;
-			}
+        this.searchFn = searchFn;
+      }
 
 			if (typeof placeholder === "string") {
-				this.searchPlaceholder = placeholder;
-			}
+        this.searchPlaceholder = placeholder;
+      }
 
 			if (typeof skipDiacritics === "boolean") {
-				this.searchSkipDiacritics = skipDiacritics;
-			}
-		},
+        this.searchSkipDiacritics = skipDiacritics;
+      }
+    },
 
-		initializeSort() {
-			const { enabled, initialSortBy, multipleColumns } = this.sortOptions;
-			const initSortBy = JSON.parse(JSON.stringify(initialSortBy || {}));
+    initializeSort() {
+      const { enabled, initialSortBy, multipleColumns } = this.sortOptions;
+      const initSortBy = flat(initialSortBy || {});
 
 			if (typeof enabled === "boolean") {
-				this.sortable = enabled;
-			}
+        this.sortable = enabled;
+      }
 
 			if (typeof multipleColumns === "boolean") {
-				this.multipleColumnSort = multipleColumns;
-			}
+        this.multipleColumnSort = multipleColumns;
+      }
 
-			//* initialSortBy can be an array or an object
+      //* initialSortBy can be an array or an object
 			if (typeof initSortBy === "object") {
-				const ref = this.fixedHeader
+        const ref = this.fixedHeader
 					? this.$refs["table-header-secondary"]
 					: this.$refs["table-header-primary"];
-				if (Array.isArray(initSortBy)) {
-					ref.setInitialSort(initSortBy);
-				} else {
-					const hasField = Object.prototype.hasOwnProperty.call(
-						initSortBy,
+        if (Array.isArray(initSortBy)) {
+          ref.setInitialSort(initSortBy);
+        } else {
+          const hasField = Object.prototype.hasOwnProperty.call(
+            initSortBy,
 						"field"
-					);
-					if (hasField) ref.setInitialSort([initSortBy]);
-				}
-			}
-		},
+          );
+          if (hasField) ref.setInitialSort([initSortBy]);
+        }
+      }
+    },
 
-		initializeSelect() {
-			const {
-				enabled,
-				selectionInfoClass,
-				selectionText,
-				clearSelectionText,
-				selectOnCheckboxOnly,
-				selectAllByPage,
-				disableSelectInfo,
-				selectAllByGroup,
+    initializeSelect() {
+      const {
+        enabled,
+        selectionInfoClass,
+        selectionText,
+        clearSelectionText,
+        selectOnCheckboxOnly,
+        selectAllByPage,
+        disableSelectInfo,
+        selectAllByGroup,
 				alwaysShowSelectionInfo,
-			} = this.selectOptions;
+      } = this.selectOptions;
 
 			if (typeof enabled === "boolean") {
-				this.selectable = enabled;
-			}
+        this.selectable = enabled;
+      }
 
 			if (typeof selectOnCheckboxOnly === "boolean") {
-				this.selectOnCheckboxOnly = selectOnCheckboxOnly;
-			}
+        this.selectOnCheckboxOnly = selectOnCheckboxOnly;
+      }
 
 			if (typeof selectAllByPage === "boolean") {
-				this.selectAllByPage = selectAllByPage;
-			}
+        this.selectAllByPage = selectAllByPage;
+      }
 
 			if (typeof selectAllByGroup === "boolean") {
-				this.selectAllByGroup = selectAllByGroup;
-			}
+        this.selectAllByGroup = selectAllByGroup;
+      }
 
 			if (typeof disableSelectInfo === "boolean") {
-				this.disableSelectInfo = disableSelectInfo;
-			}
+        this.disableSelectInfo = disableSelectInfo;
+      }
 
 			if (typeof selectionInfoClass === "string") {
-				this.selectionInfoClass = selectionInfoClass;
-			}
+        this.selectionInfoClass = selectionInfoClass;
+      }
 
 			if (typeof selectionText === "string" || typeof selectionText === "function") {
-				this.selectionText = selectionText;
-			}
-      
+        this.selectionText = selectionText;
+      }
+
       if (typeof alwaysShowSelectionInfo === "boolean") {
 				this.alwaysShowSelectionInfo = alwaysShowSelectionInfo;
 			}
 
 			if (typeof clearSelectionText === "string") {
-				this.clearSelectionText = clearSelectionText;
-			}
-		},
-	},
+        this.clearSelectionText = clearSelectionText;
+      }
+    },
+    calculateTopSize() {
+      this.$nextTick(() => {
+        const heads = this.$el.querySelectorAll('thead');
+        if (!heads[1])
+          return;
+        heads[1].style.height = `${heads[0].offsetHeight}px`;
+      });
+    }
+  },
 
-	mounted() {
-		if (this.perPage) {
-			this.currentPerPage = this.perPage;
-		}
-		this.initializeSort();
-	},
+  mounted() {
+    if (this.perPage) {
+      this.currentPerPage = this.perPage;
+    }
+    const fHeight =  (() => {
+      this.scrollTop = (this.$refs.scroller?.scrollTop || 0);
+      this.scrollHeight = (this.$refs.scroller?.offsetHeight - this.$refs.fixedHeader?.offsetHeight || 60);
+    });
 
-	components: {
+    this._fHeight = fHeight;
+    this.$refs.scroller.addEventListener('scroll', fHeight);
+    this.ro =  new ResizeObserver(fHeight);
+    this.ro.observe(this.$refs.scroller);
+    this.initializeSort();
+    },
+    beforeUnmount() {
+      this.ro.disconnect();
+      this.$refs.scroller.removeEventListener('scroll',this._fHeight);
+    },
+
+  components: {
 		"vgt-pagination": VgtPagination,
 		"vgt-global-search": VgtGlobalSearch,
 		"vgt-header-row": VgtHeaderRow,
 		"vgt-table-header": VgtTableHeader,
-	},
+  },
 };
 
 const _hoisted_1 = {
@@ -10303,24 +10537,32 @@ const _hoisted_1 = {
   class: "vgt-loading vgt-center-align"
 };
 const _hoisted_2 = { class: "vgt-selection-info-row__actions vgt-pull-right" };
-const _hoisted_3 = { class: "vgt-fixed-header" };
+const _hoisted_3 = {
+  class: "vgt-fixed-header",
+  ref: "fixedHeader"
+};
 const _hoisted_4 = ["id"];
-const _hoisted_5 = ["id"];
-const _hoisted_6 = ["onMouseenter", "onMouseleave", "onDblclick", "onClick", "onAuxclick"];
-const _hoisted_7 = {
+const _hoisted_5 = {
+  key: 0,
+  style: {"width":"auto"}
+};
+const _hoisted_6 = ["id"];
+const _hoisted_7 = { key: 1 };
+const _hoisted_8 = ["onMouseenter", "onMouseleave", "onDblclick", "onClick", "onAuxclick"];
+const _hoisted_9 = {
   key: 0,
   class: "line-numbers"
 };
-const _hoisted_8 = ["onClick"];
-const _hoisted_9 = ["disabled", "checked"];
-const _hoisted_10 = ["onClick", "data-label"];
-const _hoisted_11 = { key: 0 };
-const _hoisted_12 = ["innerHTML"];
-const _hoisted_13 = ["colspan"];
-const _hoisted_14 = ["colspan"];
-const _hoisted_15 = { key: 0 };
+const _hoisted_10 = ["onClick"];
+const _hoisted_11 = ["disabled", "checked"];
+const _hoisted_12 = ["onClick", "data-label"];
+const _hoisted_13 = { key: 0 };
+const _hoisted_14 = ["innerHTML"];
+const _hoisted_15 = ["colspan"];
 const _hoisted_16 = ["colspan"];
-const _hoisted_17 = {
+const _hoisted_17 = { key: 0 };
+const _hoisted_18 = ["colspan"];
+const _hoisted_19 = {
   key: 2,
   class: "vgt-wrap__actions-footer"
 };
@@ -10359,6 +10601,9 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
               rtl: $props.rtl,
               total: $props.totalRows || $options.totalRowCount,
               mode: _ctx.paginationMode,
+              jumpFirstOrLast: $props.paginationOptions.jumpFirstOrLast,
+              firstText: _ctx.firstText,
+              lastText: _ctx.lastText,
               nextText: _ctx.nextText,
               prevText: _ctx.prevText,
               rowsPerPageText: _ctx.rowsPerPageText,
@@ -10369,7 +10614,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
               pageText: _ctx.pageText,
               allText: _ctx.allText,
               "info-fn": _ctx.paginationInfoFn
-            }, null, 8 /* PROPS */, ["onPageChanged", "onPerPageChanged", "perPage", "rtl", "total", "mode", "nextText", "prevText", "rowsPerPageText", "perPageDropdownEnabled", "customRowsPerPageDropdown", "paginateDropdownAllowAll", "ofText", "pageText", "allText", "info-fn"])
+            }, null, 8 /* PROPS */, ["onPageChanged", "onPerPageChanged", "perPage", "rtl", "total", "mode", "jumpFirstOrLast", "firstText", "lastText", "nextText", "prevText", "rowsPerPageText", "perPageDropdownEnabled", "customRowsPerPageDropdown", "paginateDropdownAllowAll", "ofText", "pageText", "allText", "info-fn"])
           ])
         : vue.createCommentVNode("v-if", true),
       vue.createVNode(_component_vgt_global_search, {
@@ -10410,7 +10655,8 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
           ? (vue.openBlock(), vue.createElementBlock("table", {
               key: 0,
               id: "vgt-table",
-              class: vue.normalizeClass($options.tableStyleClasses)
+              class: vue.normalizeClass($options.tableStyleClasses),
+              style: {"table-layout":"fixed"}
             }, [
               vue.createElementVNode("colgroup", null, [
                 (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList($props.columns, (column, index) => {
@@ -10427,6 +10673,8 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
                 onToggleExpandRowsAll: $options.toggleExpandRowsAll,
                 onSortChange: $options.changeSort,
                 onFilterChanged: $options.filterRows,
+                onDrag: $options.drag,
+                onResetResize: $options.resetResize,
                 columns: $props.columns,
                 "line-numbers": $props.lineNumbers,
                 selectable: _ctx.selectable,
@@ -10455,25 +10703,31 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
                   })
                 ]),
                 _: 3 /* FORWARDED */
-              }, 8 /* PROPS */, ["onToggleSelectAll", "onToggleExpandRowsAll", "onSortChange", "onFilterChanged", "columns", "line-numbers", "selectable", "all-selected", "all-selected-indeterminate", "mode", "sortable", "multiple-column-sort", "typed-columns", "getClasses", "searchEnabled", "paginated", "table-ref"])
+              }, 8 /* PROPS */, ["onToggleSelectAll", "onToggleExpandRowsAll", "onSortChange", "onFilterChanged", "onDrag", "onResetResize", "columns", "line-numbers", "selectable", "all-selected", "all-selected-indeterminate", "mode", "sortable", "multiple-column-sort", "typed-columns", "getClasses", "searchEnabled", "paginated", "table-ref"])
             ], 2 /* CLASS */))
           : vue.createCommentVNode("v-if", true)
-      ]),
+      ], 512 /* NEED_PATCH */),
       vue.createElementVNode("div", {
         class: vue.normalizeClass({ 'vgt-responsive': $props.responsive }),
-        style: vue.normalizeStyle($options.wrapperStyles)
+        style: vue.normalizeStyle($options.wrapperStyles),
+        ref: "scroller"
       }, [
         vue.createElementVNode("table", {
           id: "vgt-table",
           ref: "table",
-          class: vue.normalizeClass($options.tableStyles)
+          class: vue.normalizeClass($options.tableStyles),
+          style: vue.normalizeStyle({'transform':  $props.virtualPaginationOptions.enabled ? 'translate(0,' + $options.paginated2ScrollTop +'px)'  :'unset' })
         }, [
           vue.createElementVNode("colgroup", null, [
+            (_ctx.selectable)
+              ? (vue.openBlock(), vue.createElementBlock("col", _hoisted_5))
+              : vue.createCommentVNode("v-if", true),
             (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList($props.columns, (column, index) => {
               return (vue.openBlock(), vue.createElementBlock("col", {
                 key: index,
-                id: `col-${index}`
-              }, null, 8 /* PROPS */, _hoisted_5))
+                id: `col-${index}`,
+                style: vue.normalizeStyle($options.columnsWidth2[index])
+              }, null, 12 /* STYLE, PROPS */, _hoisted_6))
             }), 128 /* KEYED_FRAGMENT */))
           ]),
           vue.createCommentVNode(" Table header "),
@@ -10503,15 +10757,18 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
               ])
             ]),
             "column-filter": vue.withCtx((slotProps) => [
-              vue.renderSlot(_ctx.$slots, "column-filter", {
-                column: slotProps.column,
-                updateFilters: slotProps.updateFilters
-              })
+              (!$props.fixedHeader)
+                ? vue.renderSlot(_ctx.$slots, "column-filter", {
+                    key: 0,
+                    column: slotProps.column,
+                    updateFilters: slotProps.updateFilters
+                  })
+                : (vue.openBlock(), vue.createElementBlock("span", _hoisted_7))
             ]),
             _: 3 /* FORWARDED */
           }, 8 /* PROPS */, ["onToggleSelectAll", "onToggleExpandRowsAll", "onSortChange", "onFilterChanged", "columns", "line-numbers", "selectable", "all-selected", "all-selected-indeterminate", "mode", "sortable", "multiple-column-sort", "typed-columns", "getClasses", "searchEnabled"]),
           vue.createCommentVNode(" Table body starts here "),
-          (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList($options.paginated, (headerRow, hIndex) => {
+          (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList($options.paginated2, (headerRow, hIndex) => {
             return (vue.openBlock(), vue.createElementBlock("tbody", { key: hIndex }, [
               vue.createCommentVNode(" if group row header is at the top "),
               ($options.groupHeaderOnTop)
@@ -10530,7 +10787,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
                     "get-classes": $options.getClasses,
                     "full-colspan": $options.fullColspan,
                     groupIndex: hIndex,
-                    onSelectGroupChange: $event => ($options.toggleSelectGroup($event, headerRow))
+                    onOnSelectGroupChange: $event => ($options.toggleSelectGroup($event, headerRow))
                   }, vue.createSlots({ _: 2 /* DYNAMIC */ }, [
                     ($options.hasHeaderRowTemplate)
                       ? {
@@ -10545,7 +10802,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
                           key: "0"
                         }
                       : undefined
-                  ]), 1032 /* PROPS, DYNAMIC_SLOTS */, ["onVgtExpand", "header-row", "columns", "line-numbers", "selectable", "select-all-by-group", "collapsable", "collect-formatted", "formatted-row", "class", "get-classes", "full-colspan", "groupIndex", "onSelectGroupChange"]))
+                  ]), 1032 /* PROPS, DYNAMIC_SLOTS */, ["onVgtExpand", "header-row", "columns", "line-numbers", "selectable", "select-all-by-group", "collapsable", "collect-formatted", "formatted-row", "class", "get-classes", "full-colspan", "groupIndex", "onOnSelectGroupChange"]))
                 : vue.createCommentVNode("v-if", true),
               vue.createCommentVNode(" normal rows here. we loop over all rows "),
               (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList(headerRow.children, (row, index) => {
@@ -10561,7 +10818,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
                         onAuxclick: $event => ($options.onRowAuxClicked(row, index, $event))
                       }, [
                         ($props.lineNumbers)
-                          ? (vue.openBlock(), vue.createElementBlock("th", _hoisted_7, vue.toDisplayString($options.getCurrentIndex(row.originalIndex)), 1 /* TEXT */))
+                          ? (vue.openBlock(), vue.createElementBlock("th", _hoisted_9, vue.toDisplayString($options.getCurrentIndex(row.originalIndex)), 1 /* TEXT */))
                           : vue.createCommentVNode("v-if", true),
                         (_ctx.selectable)
                           ? (vue.openBlock(), vue.createElementBlock("th", {
@@ -10573,8 +10830,8 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
                                 type: "checkbox",
                                 disabled: row.vgtDisabled,
                                 checked: row.vgtSelected
-                              }, null, 8 /* PROPS */, _hoisted_9)
-                            ], 8 /* PROPS */, _hoisted_8))
+                              }, null, 8 /* PROPS */, _hoisted_11)
+                            ], 8 /* PROPS */, _hoisted_10))
                           : vue.createCommentVNode("v-if", true),
                         (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList($props.columns, (column, i) => {
                           return (vue.openBlock(), vue.createElementBlock(vue.Fragment, null, [
@@ -10593,17 +10850,17 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
                                     expandedRow: _ctx.expandedRowIndex === index
                                   }, () => [
                                     (!column.html)
-                                      ? (vue.openBlock(), vue.createElementBlock("span", _hoisted_11, vue.toDisplayString($options.collectFormatted(row, column)), 1 /* TEXT */))
+                                      ? (vue.openBlock(), vue.createElementBlock("span", _hoisted_13, vue.toDisplayString($options.collectFormatted(row, column)), 1 /* TEXT */))
                                       : (vue.openBlock(), vue.createElementBlock("span", {
                                           key: 1,
                                           innerHTML: $options.collect(row, column.field)
-                                        }, null, 8 /* PROPS */, _hoisted_12))
+                                        }, null, 8 /* PROPS */, _hoisted_14))
                                   ])
-                                ], 10 /* CLASS, PROPS */, _hoisted_10))
+                                ], 10 /* CLASS, PROPS */, _hoisted_12))
                               : vue.createCommentVNode("v-if", true)
                           ], 64 /* STABLE_FRAGMENT */))
                         }), 256 /* UNKEYED_FRAGMENT */))
-                      ], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_6))
+                      ], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_8))
                     : vue.createCommentVNode("v-if", true),
                   (_ctx.expandedRowIndex === index)
                     ? (vue.openBlock(), vue.createElementBlock("tr", {
@@ -10616,14 +10873,14 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
                             formattedRow: $options.formattedRow(row),
                             index: index
                           })
-                        ], 8 /* PROPS */, _hoisted_13)
+                        ], 8 /* PROPS */, _hoisted_15)
                       ], 2 /* CLASS */))
                     : vue.createCommentVNode("v-if", true),
                   (row['expanded'])
                     ? (vue.openBlock(), vue.createElementBlock("tr", {
                         key: row.originalIndex
                       }, [
-                        vue.createElementVNode("td", { colspan: $options.fullColspan }, vue.toDisplayString(row["expandedRow"]), 9 /* TEXT, PROPS */, _hoisted_14)
+                        vue.createElementVNode("td", { colspan: $options.fullColspan }, vue.toDisplayString(row["expandedRow"]), 9 /* TEXT, PROPS */, _hoisted_16)
                       ]))
                     : vue.createCommentVNode("v-if", true)
                 ], 64 /* STABLE_FRAGMENT */))
@@ -10642,7 +10899,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
                     "get-classes": $options.getClasses,
                     "full-colspan": $options.fullColspan,
                     groupIndex: _ctx.index,
-                    onSelectGroupChange: $event => ($options.toggleSelectGroup($event, headerRow))
+                    onOnSelectGroupChange: $event => ($options.toggleSelectGroup($event, headerRow))
                   }, vue.createSlots({ _: 2 /* DYNAMIC */ }, [
                     ($options.hasHeaderRowTemplate)
                       ? {
@@ -10657,25 +10914,31 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
                           key: "0"
                         }
                       : undefined
-                  ]), 1032 /* PROPS, DYNAMIC_SLOTS */, ["header-row", "columns", "line-numbers", "selectable", "select-all-by-group", "collect-formatted", "formatted-row", "get-classes", "full-colspan", "groupIndex", "onSelectGroupChange"]))
+                  ]), 1032 /* PROPS, DYNAMIC_SLOTS */, ["header-row", "columns", "line-numbers", "selectable", "select-all-by-group", "collect-formatted", "formatted-row", "get-classes", "full-colspan", "groupIndex", "onOnSelectGroupChange"]))
                 : vue.createCommentVNode("v-if", true)
             ]))
           }), 128 /* KEYED_FRAGMENT */)),
           ($options.showEmptySlot)
-            ? (vue.openBlock(), vue.createElementBlock("tbody", _hoisted_15, [
+            ? (vue.openBlock(), vue.createElementBlock("tbody", _hoisted_17, [
                 vue.createElementVNode("tr", null, [
                   vue.createElementVNode("td", { colspan: $options.fullColspan }, [
                     vue.renderSlot(_ctx.$slots, "emptystate", {}, () => [
                       _cache[3] || (_cache[3] = vue.createElementVNode("div", { class: "vgt-center-align vgt-text-disabled" }, " No data for table ", -1 /* HOISTED */))
                     ])
-                  ], 8 /* PROPS */, _hoisted_16)
+                  ], 8 /* PROPS */, _hoisted_18)
                 ])
               ]))
             : vue.createCommentVNode("v-if", true)
-        ], 2 /* CLASS */)
+        ], 6 /* CLASS, STYLE */),
+        ($props.virtualPaginationOptions.enabled)
+          ? (vue.openBlock(), vue.createElementBlock("div", {
+              key: 0,
+              style: vue.normalizeStyle({height: $options.paginated2ScrollHeight +'px', 'background-color': 'red' } )
+            }, null, 4 /* STYLE */))
+          : vue.createCommentVNode("v-if", true)
       ], 6 /* CLASS, STYLE */),
       ($options.hasFooterSlot)
-        ? (vue.openBlock(), vue.createElementBlock("div", _hoisted_17, [
+        ? (vue.openBlock(), vue.createElementBlock("div", _hoisted_19, [
             vue.renderSlot(_ctx.$slots, "table-actions-bottom")
           ]))
         : vue.createCommentVNode("v-if", true),
@@ -10694,6 +10957,9 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
               rtl: $props.rtl,
               total: $props.totalRows || $options.totalRowCount,
               mode: _ctx.paginationMode,
+              jumpFirstOrLast: $props.paginationOptions.jumpFirstOrLast,
+              firstText: _ctx.firstText,
+              lastText: _ctx.lastText,
               nextText: _ctx.nextText,
               prevText: _ctx.prevText,
               rowsPerPageText: _ctx.rowsPerPageText,
@@ -10704,7 +10970,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
               pageText: _ctx.pageText,
               allText: _ctx.allText,
               "info-fn": _ctx.paginationInfoFn
-            }, null, 8 /* PROPS */, ["onPageChanged", "onPerPageChanged", "perPage", "rtl", "total", "mode", "nextText", "prevText", "rowsPerPageText", "perPageDropdownEnabled", "customRowsPerPageDropdown", "paginateDropdownAllowAll", "ofText", "pageText", "allText", "info-fn"])
+            }, null, 8 /* PROPS */, ["onPageChanged", "onPerPageChanged", "perPage", "rtl", "total", "mode", "jumpFirstOrLast", "firstText", "lastText", "nextText", "prevText", "rowsPerPageText", "perPageDropdownEnabled", "customRowsPerPageDropdown", "paginateDropdownAllowAll", "ofText", "pageText", "allText", "info-fn"])
           ])
         : vue.createCommentVNode("v-if", true)
     ], 2 /* CLASS */)
@@ -10719,4 +10985,4 @@ var index = {
 };
 
 exports.VueGoodTable = VueGoodTable;
-exports["default"] = index;
+exports.default = index;
